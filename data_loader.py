@@ -1,27 +1,27 @@
 import pandas as pd
-"""
-column_file_name=r'C:\sharon\second_degree\Initial_project\column_names_of_exported_feature-table_for_YoramL.txt'
-values_file_name=r'C:\sharon\second_degree\Initial_project\values_of_exported_feature-table_for_YoramL.txt'
-maping_file_name=r'C:\sharon\second_degree\Initial_project\mapping file with data Baniyahs Merge.csv'
-"""
-def data_loader_exported_features(column_file_name,values_file_name,column_delimiter,value_delimiter):
+import requests
 
-    col_file=open(column_file_name)
-    column_info=col_file.read()
+# because the exported features file was in a txt format, I had difficulties in reading it,so some transformations were made.
+def data_loader_exported_features(column_page_url,values_page_url,column_delimiter='\t',value_delimiter='\t'):
+
+    column_page = requests.get(column_page_url)
+    column_info=column_page.text
     column_name_list=column_info.split(column_delimiter)
-    exported_features=pd.read_csv(values_file_name,header=None,names=column_name_list,delimiter=value_delimiter)
+    exported_features=pd.read_csv(values_page_url,header=None,names=column_name_list,delimiter=value_delimiter)
     return exported_features
 
-def data_rearrangement(data):
-    data.set_index('#OTU_ID',inplace=True)
-    data=data.T
-    data.insert(loc=0,column='#SampleID',value=data.index)
-    data.reset_index(drop=True,inplace=True)
-    data=data.rename_axis([None], axis=1).rename_axis('index')
-    return data
-
-"""
-samples_results=data_rearrangement(data_loader_exported_features(column_file_name,values_file_name,'\t','\t'))
-mapping_table=pd.read_csv(maping_file_name)
-print(pd.merge(samples_results,mapping_table,on='#SampleID'))
-"""
+def taxonomy(taxonomy_page_url):
+  firstline=True
+  Feature_ID_list=[]
+  Taxon_list=[]
+  taxonomy_page=requests.get(taxonomy_page_url)
+  for line in taxonomy_page.iter_lines():
+      if firstline==False:
+        line=line.decode("utf-8")
+        id_taxon_con=line.split('\t')
+        Feature_ID_list.append(id_taxon_con[0])
+        Taxon_list.append(id_taxon_con[1])
+      else:
+        firstline=False
+  df=pd.DataFrame({'#OTU_ID':Feature_ID_list,'Taxon':Taxon_list})
+  return df
