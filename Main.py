@@ -81,5 +81,7 @@ for neighbors in range(1,Constants.MAX_NIGH):
 """Plot the results"""
 plt.plot(range(1,Constants.MAX_NIGH),percentage,marker='o',markersize=15,markerfacecolor='red')
 plt.title('Model : KNN \n'+'Dimension_fn : '+str(dimension_fn_name)+' on all time points'+'\n'+'Correlation_threshold : '+str(Constants.THRESHOLD)+'\n Normalization_fn : '+str(normalization_fn_name+'\n'))
+plt.xlabel('K neighbors')
+plt.ylabel('Accuracy ratio')
 plt.tight_layout()
 plt.show()
