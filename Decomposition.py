@@ -1,7 +1,7 @@
 import pandas as pd
 
-def decompose(data,dec_func,n_components=2):
-    dec_obj = dec_func(n_components=n_components)
+def decompose(data,dec_func,n_components=2,**kwargs):
+    dec_obj = dec_func(n_components=n_components,**kwargs)
     dec_obj.fit(data)
     components = dec_obj.fit_transform(data)
     #changing the columns names.
