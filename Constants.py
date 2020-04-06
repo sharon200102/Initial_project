@@ -6,6 +6,7 @@ maping_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/
 taxonomy_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/taxonomy.tsv'
 column_page_delimiter='\t'
 value_page_delimiter='\t'
+relevant_categorical_names=['Group','Treatment','TimePointNum']
 columns_to_be_dropped=['BarcodeSequence','LinkerPrimerSequence','ReversePrimer','plate','Experiment','Genotype','MiceNum','CageNum','Mouse','Treatment','SampleType','DayOfSam','TimePoint','TimePointNum','TimeGroup','tumor_load','spleen_weight','cell_spleen','MDSC_GR1_spleen','MFI_zeta_spleen','cell_BM','MDSC_GR1_bm','Project','Description','WellPosition','GroupTreat','Group','Run']
 THRESHOLD=0.8
 normalization_dict={'Robust':Normalization.Robust_std,'Zscore':Normalization.zscore_norm,'MinMax':Normalization.minmax_norm}

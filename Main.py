@@ -10,6 +10,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import Clustering
 import matplotlib.pyplot as plt
 from sklearn import svm
+import Plot
 
 exported_features = DL.data_loader_exported_features(Constants.column_page_url, Constants.values_page_url)
 # load and squash taxonomy file.
@@ -26,7 +27,7 @@ samples_results=SA.data_rearrangement(reduced_exported_features)
 mapping_table=pd.read_csv(Constants.maping_page_url)
 merged_table=pd.merge(samples_results,mapping_table,on='#SampleID')
 """
-Add classification of T5 to sampels in T0
+Add classification of T5 to all samples
 identification is by CageNum MiceNum and Experiment 
 """
 
@@ -45,13 +46,16 @@ for cage, mice, exp in zip(merged_table['CageNum'], merged_table['MiceNum'], mer
 class_list = pd.Series(class_list)
 
 """
-Drop unnecessary columns.
+Before drooping columns, Save categorical columns that will be important in the future.
 """
 merged_table.reset_index(drop=True,inplace=True)
-tp=merged_table['TimePointNum']
+relevant_categorical=merged_table[Constants.relevant_categorical_names]
+relevant_categorical=relevant_categorical.assign(tumor_load=class_list.values)
+"""
+Drop unnecessary columns.
+"""
 merged_table.drop(Constants.columns_to_be_dropped,inplace=True,axis=1)
 SA.removeZeroCols(merged_table)
-sampleId=merged_table['#SampleID']
 
 """Remove highly correlated columns"""
 uncorr_data=SA.dropHighCorr(merged_table,Constants.THRESHOLD)
@@ -63,9 +67,12 @@ normalized_data= Constants.normalization_dict[normalization_fn_name](uncorr_data
 """Dimension reduction on the whole data"""
 dimension_fn_name=input('Enter the dimensionality reduction function wanted \n PCA \n ICA \n')
 dec_obj,dec_data=decompose(normalized_data,Constants.dimension_reduction_dict[dimension_fn_name],n_components=5,random_state=1)
+"""Visualizations after decomposition"""
+Plot.visualize_in_pairs(dec_data,"decomposed_data",relevant_categorical)
+Plot.column_attribute_progress_in_categorical(dec_data,relevant_categorical['TimePointNum'],"Time")
 """Look only at time point zero"""
-dec_data_at0=dec_data[tp==0]
-class_list_at0=class_list[tp==0]
+dec_data_at0=dec_data[relevant_categorical['TimePointNum']==0]
+class_list_at0=class_list[relevant_categorical['TimePointNum']==0]
 
 
 """Split the data and cluster it"""
