@@ -53,35 +53,74 @@ def visualize_in_pairs(X_all, data_name="", categorical_columns=None, figsize=(1
 At the moment: the function plots the progress of the mean of each column,
 based on the unique values of the categorical column inserted. 
 """
-def column_attribute_progress_in_categorical(X_all, categorical_series, categorical_name="categorical"):
+def column_attribute_progress_in_categorical(X_all, categorical_series, categorical_name="categorical",splitter=None,splitter_name=""):
     # Marker_counter is equal to 2 because the previous markers in the list are difficult to see.
     # the marker will be responsible to the difference between the columns.
-    marker_counter = 2
 
-    fig = plt.figure()
+    marker_counter = 0
+    fig = plt.figure(figsize=(10,10))
     new_plot = fig.add_subplot(111)
-    # Add the categorical column to the data.
-    X_all = X_all.assign(categorical=categorical_series.values)
-    # Group the data based on the categorical column.
-    grouped = X_all.groupby(['categorical']).mean()
-    # Every column in grouped contains the mean of the column for every unique value in categorical_series
-    for col_name in grouped.columns:
-        # Plot the line the goes through the means of the column in the different categorical values.
-        new_plot.plot(grouped.index, grouped[col_name], marker=marker_counter, markersize=10,
-                      label=col_name)
-        marker_counter += 1
+    # if there is no splitter
+    if len(splitter)==0:
 
-    #Plot A vertical line for each unique categorical value.
-    for x in grouped.index:
-        ymin = grouped.loc[x].min()
-        ymax = grouped.loc[x].max()
-        new_plot.plot([x,x],[ymin,ymax],c='k')
+        # Add the categorical column to the data.
+        X_all = X_all.assign(categorical=categorical_series.values)
+        # Group the data based on the categorical column.
+        grouped = X_all.groupby(['categorical']).mean()
+        # Every column in grouped contains the mean of the column for every unique value in categorical_series
+        for col_name in grouped.columns:
+            # Plot the line the goes through the means of the column in the different categorical values.
+            new_plot.plot(grouped.index, grouped[col_name], marker=marker_counter, markersize=10,
+                          label=col_name)
+            marker_counter += 1
+
+        #Plot A vertical line for each unique categorical value.
+
+        for time_point in grouped.index:
+            ymin = grouped.loc[time_point].min()
+            ymax = grouped.loc[time_point].max()
+            new_plot.plot([time_point,time_point],[ymin,ymax],c='k')
+    # Splitter exists
+    else:
+        # Add both of the categorical columns
+        X_all = X_all.assign(categorical=categorical_series.values,splitter=splitter)
+        # Groupby noth columns and make only categorical as index avoiding two indices situation.
+        grouped = X_all.groupby(['categorical','splitter']).mean().reset_index(level=1)
+        # save and remove the splitter because its not truly a part of the data,it was only added because of the groupby
+        splitter_index=grouped['splitter']
+        grouped.drop('splitter',axis=1,inplace=True)
+
+#   The columns in grouped represent the progress of the original column over categorical.
+
+        for col_name in grouped.columns:
+            #Select every column by all possible splitter values and plot the progress.
+            for splitter_val in splitter_index.unique():
+                splitter_progress=grouped[col_name][splitter_index==splitter_val]
+                new_plot.plot(splitter_progress.index, splitter_progress, marker=marker_counter, markersize=10,
+                              label=col_name+"_"+str(splitter_val))
+                marker_counter += 1
+
+        #Plot A vertical line for each unique categorical value.
+        for time_point in grouped.index.unique():
+            grouped_in_specific_time_point=grouped[grouped.index==time_point]
+            ymin =max(grouped_in_specific_time_point.max(axis=1))
+            ymax = min(grouped_in_specific_time_point.min(axis=1))
+            new_plot.plot([time_point,time_point],[ymin,ymax],c='k')
+
+
 
     new_plot.set_xlabel(categorical_name)
     new_plot.set_ylabel('Mean value')
     new_plot.set_title('Columns progress in ' + categorical_name)
-    plt.legend()
+    plt.legend(title="Splitted by: "+splitter_name)
     plt.tight_layout()
-    fig.savefig('Columns_progress_in_' + categorical_name + '.png')
+    fig.savefig('Columns_progress_in_' + categorical_name +"_"+splitter_name+'.png')
     plt.close()
+
+
+
+
+
+
+
 

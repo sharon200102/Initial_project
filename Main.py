@@ -69,7 +69,7 @@ dimension_fn_name=input('Enter the dimensionality reduction function wanted \n P
 dec_obj,dec_data=decompose(normalized_data,Constants.dimension_reduction_dict[dimension_fn_name],n_components=5,random_state=1)
 """Visualizations after decomposition"""
 Plot.visualize_in_pairs(dec_data,"decomposed_data",relevant_categorical)
-Plot.column_attribute_progress_in_categorical(dec_data,relevant_categorical['TimePointNum'],"Time")
+Plot.column_attribute_progress_in_categorical(dec_data,relevant_categorical['TimePointNum'],"Time",splitter=relevant_categorical['tumor_load'],splitter_name="tumor_load")
 """Look only at time point zero"""
 dec_data_at0=dec_data[relevant_categorical['TimePointNum']==0]
 class_list_at0=class_list[relevant_categorical['TimePointNum']==0]
