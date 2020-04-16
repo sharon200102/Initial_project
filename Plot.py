@@ -1,6 +1,9 @@
 import itertools
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy import stats
+import numpy as np
+import Constants
 
 """
              Iterate through all n chose two sub groups of columns in the data, and plot the relationship between them.
@@ -116,6 +119,72 @@ def column_attribute_progress_in_categorical(X_all, categorical_series, categori
     plt.tight_layout()
     fig.savefig('Columns_progress_in_' + categorical_name +"_"+splitter_name+'.png')
     plt.close()
+
+
+
+
+
+"""
+The function first splits X_all by the categorical inserted, afterwords it splits every column to two groups by the binary splitter.
+performs a T-test between both groups and plots all result.
+A chart for better explanation will be attached soon.
+"""
+def t_test_progress_over_categorical(X_all,categorical,splitter,categorical_name="",splitter_name=""):
+    splitter_unique=splitter.unique()
+    # Set some parameters for the plot
+    fig, ax = plt.subplots()
+    plot_len=len(categorical.unique())
+    ind = np.arange(plot_len)
+    ax.set_xticks(ind)
+    ax.set_xticklabels(sorted(categorical.unique()))
+    # The width of each bar and also the space between them.
+    width = 0.15
+    total_width=0   # Total width will used as the locaton of the current bar.
+    p_values_of_specific_column=[] # The progress of the P values of each column
+
+
+    for col in X_all.columns:
+        relevant_col=X_all[col]
+        for unique_value in sorted(categorical.unique()):
+            values_fulfill_condition=relevant_col[categorical==unique_value] # split the column by the categoricl value.
+            relevant_splitter=splitter[categorical==unique_value] # Select the relevant spliter for the values above.
+            p_val=stats.ttest_ind(values_fulfill_condition[relevant_splitter==splitter_unique[0]],values_fulfill_condition[relevant_splitter==splitter_unique[1]],equal_var=False)[1]
+            p_values_of_specific_column.append(p_val)
+        ax.bar(ind+total_width, p_values_of_specific_column, width,label=col) # Create bars describing the development of the P values.
+        total_width+=width # update the location for the next bar group.
+        p_values_of_specific_column.clear()
+
+    # Creating the plot and saving it.
+    ax.set_xlabel(categorical_name)
+    ax.set_ylabel('P values')
+    ax.set_title('T test progress over : '+categorical_name)
+    ax.axhline(y=Constants.P_VALUE_THRESHOLD, linewidth=1, color='r', ls='--', label='P = 0.05')
+    ax.legend(title="Splitted by: "+splitter_name)
+    fig.savefig("T_test_"+categorical_name+"_"+splitter_name+".png")
+    plt.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

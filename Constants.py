@@ -9,6 +9,7 @@ value_page_delimiter='\t'
 relevant_categorical_names=['Group','Treatment','TimePointNum']
 columns_to_be_dropped=['BarcodeSequence','LinkerPrimerSequence','ReversePrimer','plate','Experiment','Genotype','MiceNum','CageNum','Mouse','Treatment','SampleType','DayOfSam','TimePoint','TimePointNum','TimeGroup','tumor_load','spleen_weight','cell_spleen','MDSC_GR1_spleen','MFI_zeta_spleen','cell_BM','MDSC_GR1_bm','Project','Description','WellPosition','GroupTreat','Group','Run']
 THRESHOLD=0.8
+P_VALUE_THRESHOLD=0.05
 normalization_dict={'Robust':Normalization.Robust_std,'Zscore':Normalization.zscore_norm,'MinMax':Normalization.minmax_norm}
 dimension_reduction_dict={'PCA':PCA,'ICA':FastICA}
 N_SPLITS=3
