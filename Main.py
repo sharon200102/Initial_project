@@ -3,14 +3,13 @@ import pandas as pd
 import Data_loader as DL
 import Constants
 from Preprocessing_actions import Structural_actions as SA
-from Preprocessing_actions import Normalization
 from Decomposition import decompose
 from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier
 import Clustering
 import matplotlib.pyplot as plt
-from sklearn import svm
 import Plot
+from sklearn.svm import SVR
 
 exported_features = DL.data_loader_exported_features(Constants.column_page_url, Constants.values_page_url)
 # load and squash taxonomy file.
@@ -26,13 +25,18 @@ reduced_exported_features = merged_exported_features.groupby('Taxon').mean()
 samples_results=SA.data_rearrangement(reduced_exported_features)
 mapping_table=pd.read_csv(Constants.maping_page_url)
 merged_table=pd.merge(samples_results,mapping_table,on='#SampleID')
+
+"""Get and select the wanted TimePoints"""
+TimePoint=input('Enter the time points to perform on  \n'+"\n".join(Constants.TimePoints_list)+"\n")
+if TimePoint=='0':
+    merged_table=merged_table[merged_table['TimePointNum']==0]
 """
 Add classification of T5 to all samples
 identification is by CageNum MiceNum and Experiment 
 """
 
 idx = 0
-class_list = []
+multi_class_tumor_load = []
 
 for cage, mice, exp in zip(merged_table['CageNum'], merged_table['MiceNum'], merged_table['Experiment']):
 
@@ -41,16 +45,19 @@ for cage, mice, exp in zip(merged_table['CageNum'], merged_table['MiceNum'], mer
     if (len(item) == 0):
         merged_table.drop(idx, inplace=True)
     else:
-        class_list.append(1) if item > 0 else class_list.append(0)
+        multi_class_tumor_load.append(item[0])
     idx += 1
-class_list = pd.Series(class_list)
+
+multi_class_tumor_load = pd.Series(multi_class_tumor_load)
+binary_tumor_load=multi_class_tumor_load.apply(lambda x: 1 if x>0 else 0)
 
 """
 Before drooping columns, Save categorical columns that will be important in the future.
 """
 merged_table.reset_index(drop=True,inplace=True)
+
 relevant_categorical=merged_table[Constants.relevant_categorical_names]
-relevant_categorical=relevant_categorical.assign(tumor_load=class_list.values)
+relevant_categorical=relevant_categorical.assign(binary_tumor_load=binary_tumor_load.values)
 """
 Drop unnecessary columns.
 """
@@ -61,35 +68,51 @@ SA.removeZeroCols(merged_table)
 uncorr_data=SA.dropHighCorr(merged_table,Constants.THRESHOLD)
 
 """Get an Normalization function from the user and normaliaze the data according to it"""
-normalization_fn_name=input('Enter the normalization function wanted \n Robust \n Zscore \n MinMax\n')
-normalized_data= Constants.normalization_dict[normalization_fn_name](uncorr_data)
+normalization_fn_name=input('Enter the normalization function wanted \n'+"\n".join(Constants.normalization_dict.keys())+"\n")
+normalized_data= Constants.normalization_dict[normalization_fn_name](uncorr_data, *Constants.normalization_parameters_dict[normalization_fn_name])
 
-"""Dimension reduction on the whole data"""
+"""Dimension reduction"""
 dimension_fn_name=input('Enter the dimensionality reduction function wanted \n PCA \n ICA \n')
 dec_obj,dec_data=decompose(normalized_data,Constants.dimension_reduction_dict[dimension_fn_name],n_components=5,random_state=1)
-"""Visualizations after decomposition"""
-Plot.visualize_in_pairs(dec_data,"decomposed_data",relevant_categorical)
-Plot.column_attribute_progress_in_categorical(dec_data,relevant_categorical['TimePointNum'],"Time",splitter=relevant_categorical['tumor_load'],splitter_name="tumor_load")
-Plot.t_test_progress_over_categorical(dec_data,relevant_categorical['TimePointNum'],relevant_categorical['tumor_load'],"Time","tumor_load")
+"""Visualizations after decomposition, different visualizations will be performed based on initially selected time points"""
+Plot.relationship_between_features(dec_data,folder='Graphs',color=relevant_categorical['binary_tumor_load'])
+
+if TimePoint=='All':
+    Plot.progress_in_time_of_column_attribute_mean(dec_data,relevant_categorical['TimePointNum'],"Time",attribute_series=relevant_categorical['binary_tumor_load'],splitter_name="binary_tumor_load")
+    Plot.t_test_progress_over_categorical(dec_data,relevant_categorical['TimePointNum'],relevant_categorical['binary_tumor_load'],"Time","binary_tumor_load")
+
 """Look only at time point zero"""
 dec_data_at0=dec_data[relevant_categorical['TimePointNum']==0]
-class_list_at0=class_list[relevant_categorical['TimePointNum']==0]
 
+kind_of_prediction=input('Enter whether you want \n'+"\n".join(Constants.prediction_sort)+"\n")
 
-"""Split the data and cluster it"""
+if kind_of_prediction=='Binary':
+    class_list_at0=binary_tumor_load[relevant_categorical['TimePointNum']==0]
+else:
+    class_list_at0=multi_class_tumor_load[relevant_categorical['TimePointNum']==0]
+
+"""Split the data and classify it"""
 kf = KFold(n_splits = Constants.N_SPLITS, shuffle = True,random_state=5)
+"""Get an evaluation function from the user"""
+eval_fn_name=input('Enter the evaluation function wanted \n'+'\n'.join(Constants.Evaluation_name_list)+'\n')
 
-percentage=[]
-score_per_fold=[]
-for neighbors in range(1,Constants.MAX_NIGH):
-    neigh = KNeighborsClassifier(n_neighbors=neighbors,weights='distance',p=1)
-    percentage.append(Clustering.cross_validation(kf,dec_data_at0,class_list_at0,neigh))
+if kind_of_prediction!='Regression':
+    percentage=[]
+    for neighbors in range(1,Constants.MAX_NIGH):
+        neigh = KNeighborsClassifier(n_neighbors=neighbors,weights='distance',p=1)
+        percentage.append(Clustering.cross_validation(kf,dec_data_at0,class_list_at0,neigh,eval_fn_name))
 
 
-"""Plot the results"""
-plt.plot(range(1,Constants.MAX_NIGH),percentage,marker='o',markersize=15,markerfacecolor='red')
-plt.title('Model : KNN \n'+'Dimension_fn : '+str(dimension_fn_name)+' on all time points'+'\n'+'Correlation_threshold : '+str(Constants.THRESHOLD)+'\n Normalization_fn : '+str(normalization_fn_name+'\n'))
-plt.xlabel('K neighbors')
-plt.ylabel('Accuracy ratio')
-plt.tight_layout()
-plt.show()
+    """Plot the results"""
+    plt.plot(range(1,Constants.MAX_NIGH),percentage,marker='o',markersize=15,markerfacecolor='red')
+    plt.title('Data TimePoints : '+TimePoint+'\n'+'Model : '+kind_of_prediction+' KNN \n'''+'Dimension_fn : '+str(dimension_fn_name)+'\n'+'Correlation_threshold : '+str(Constants.THRESHOLD)+'\n Normalization_fn : '+str(normalization_fn_name+'\n'))
+    plt.ylabel(eval_fn_name)
+    plt.xlabel('K neighbors')
+    plt.tight_layout()
+    plt.show()
+
+    """if the user wish to perform a regression, build a SVR model and print the R2 performance"""
+
+elif kind_of_prediction=='Regression':
+    clf = SVR(C =4,epsilon=0.0001,gamma='scale')
+    print(Clustering.cross_validation(kf,dec_data_at0,class_list_at0,clf,eval_fn_name))
