@@ -61,7 +61,7 @@ def relationship_between_features(dataframe, folder, color=None, title="Relation
 
     if not os.path.exists(folder):
         os.makedirs(folder)
-    plt.savefig(join(folder, title.replace(" ", "_").replace("\n", "_") + ".png"))
+    fig.savefig(join(folder, title.replace(" ", "_").replace("\n", "_") + ".png"))
 
     plt.close()
     return fig
@@ -73,15 +73,15 @@ based on the unique values of the categorical column inserted.
 """
 
 
-def progress_in_time_of_column_attribute_mean(dataframe, time_series, categorical_name="categorical",
+def progress_in_time_of_column_attribute_mean(dataframe, time_series,folder,
                                               attribute_series=None,
-                                              splitter_name=""):
-    # Marker_counter is equal to 2 because the previous markers in the list are difficult to see.
+                                              splitter_name="",
+                                              title='Progress_in_time_of_column_attribute_mean',figure_size=(10,10)):
     # the marker will be responsible to the difference between the columns.
     cmap = matplotlib.cm.get_cmap()
     lines_array = list(matplotlib.lines.lineStyles.keys())
     marker_counter = 0
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=figure_size)
     new_plot = fig.add_subplot(111)
     # if there is no splitter
     if attribute_series is None:
@@ -106,9 +106,9 @@ def progress_in_time_of_column_attribute_mean(dataframe, time_series, categorica
     # Splitter exists
     else:
         # Add both of the categorical columns
-        dataframe = dataframe.assign(time_point=time_series.values, attribute=attribute_series)
+        extended_dataframe = dataframe.assign(time_point=time_series.values, attribute=attribute_series)
         # Groupby both columns and make only time as index avoiding two indices situation.
-        grouped = dataframe.groupby(['time_point', 'attribute']).mean().reset_index(level=1)
+        grouped = extended_dataframe.groupby(['time_point', 'attribute']).mean().reset_index(level=1)
         # save and remove the splitter because its not truly a part of the data,it was only added because of the groupby
         attribute_col = grouped['attribute']
         grouped.drop('attribute', axis=1, inplace=True)
@@ -126,17 +126,22 @@ def progress_in_time_of_column_attribute_mean(dataframe, time_series, categorica
         # Plot A vertical line for each unique categorical value.
         for time_point in grouped.index.unique():
             grouped_in_specific_time_point = grouped[grouped.index == time_point]
-            ymin = max(grouped_in_specific_time_point.max(axis=1))
-            ymax = min(grouped_in_specific_time_point.min(axis=1))
+            ymax = max(grouped_in_specific_time_point.max(axis=1))
+            ymin = min(grouped_in_specific_time_point.min(axis=1))
             new_plot.plot([time_point, time_point], [ymin, ymax], c='k')
 
-    new_plot.set_xlabel(categorical_name)
+    new_plot.set_xlabel('Time')
     new_plot.set_ylabel('Mean value')
-    new_plot.set_title('Columns progress in ' + categorical_name)
+    new_plot.set_title(title)
     plt.legend(title="Splitted by: " + splitter_name)
     plt.tight_layout()
-    fig.savefig('Columns_progress_in_' + categorical_name + "_" + splitter_name + '.png')
     plt.close()
+
+
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    fig.savefig(join(folder, title.replace(" ", "_").replace("\n", "_") + ".png"))
+    return fig
 
 
 """
