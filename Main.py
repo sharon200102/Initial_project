@@ -58,7 +58,6 @@ multi_class_tumor_load = pd.Series(multi_class_tumor_load)
 binary_tumor_load=multi_class_tumor_load.apply(lambda x: 1 if x>0 else 0)
 
 merged_table.reset_index(drop=True,inplace=True)
-
 """
 Drop all columns that are not related to bacterial information.
 """

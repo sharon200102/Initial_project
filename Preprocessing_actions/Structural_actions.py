@@ -13,7 +13,7 @@ def one_hot(data,categorical_columns):
   # Get one hot encoding of columns
     one_hot = pd.get_dummies(data[col])
     # Drop column B as it is now encoded
-    data.drop(col,axis = 1,inplace=True)
+    data=data.drop(col,axis = 1)
     # Join the encoded df
     data = data.join(one_hot)
   return data
