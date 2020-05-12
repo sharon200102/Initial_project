@@ -66,8 +66,11 @@ samples_bacterial_data=merged_table.drop(Constants.mapping_and_general_info_colu
 """remove bacteria that only consist of zero """
 SA.removeZeroCols(samples_bacterial_data)
 """Plot correlation between the bacteria and the target, correlation between immune_system_features and the target """
+
+"""
 Plot.draw_rhos_calculation_figure(multi_class_tumor_load,samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and target',6,save_folder='Graphs\Correlation\Bacteria')
 Plot.draw_rhos_calculation_figure(merged_table['tumor_load'],merged_table[Constants.immune_system_features],'Correlation between immune system parameters and the target',6,save_folder='Graphs\Correlation\Others')
+"""
 
 """Remove highly correlated columns"""
 uncorr_data=SA.dropHighCorr(samples_bacterial_data,Constants.THRESHOLD)
