@@ -1,14 +1,14 @@
 """----Imports----"""
 import pandas as pd
-import Data_loader as DL
-import Constants
-from Preprocessing_actions import Structural_actions as SA
-from Decomposition import decompose
+from Code import Data_loader as DL
+import Projects.CRC_data.Constants as Constants
+from Code.Preprocessing_actions import Structural_actions as SA
+from Code.Decomposition import decompose
 from sklearn.model_selection import KFold
 from sklearn.neighbors import KNeighborsClassifier
-import Clustering
+import Code.Clustering as Clustering
 import matplotlib.pyplot as plt
-import Plot
+import Code.Plot as Plot
 from sklearn.svm import SVR
 import seaborn as sns
 from sklearn import linear_model

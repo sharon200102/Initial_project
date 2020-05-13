@@ -1,4 +1,4 @@
-from Preprocessing_actions import Normalization
+from Code.Preprocessing_actions import Normalization
 from sklearn.decomposition import PCA, FastICA
 column_page_url = 'https://raw.githubusercontent.com/sharon200102/Initial_project/master/column_names_of_exported_feature-table_for_YoramL.txt'
 values_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/values_of_exported_feature-table_for_YoramL.txt'

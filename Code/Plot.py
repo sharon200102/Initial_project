@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import numpy as np
 import pandas as pd
-import Constants
 from math import log10
 import os
 from os.path import join
