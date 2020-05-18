@@ -10,8 +10,8 @@ import Code.Clustering as Clustering
 import matplotlib.pyplot as plt
 import Code.Plot as Plot
 from sklearn.svm import SVR
-import seaborn as sns
-from sklearn import linear_model
+
+
 """Load the microbiome file"""
 exported_features = DL.data_loader_exported_features(Constants.column_page_url, Constants.values_page_url)
 # load and reduce the level of taxonomy file.
@@ -63,8 +63,14 @@ Drop all columns that are not related to bacterial information.
 """
 
 samples_bacterial_data=merged_table.drop(Constants.mapping_and_general_info_columns,axis=1)
+samples_bacterial_data_and_identification=merged_table.drop(Constants.mapping_and_general_info_columns_no_identification,axis=1)
 """remove bacteria that only consist of zero """
 SA.removeZeroCols(samples_bacterial_data)
+SA.removeZeroCols(samples_bacterial_data_and_identification)
+biit=Plot.bacteria_intraction_in_time(samples_bacterial_data_and_identification,Constants.identification_columns,'TimePointNum')
+v = [100] * len(biit.relevant_columns)
+biit.plot(node_size_list=v,G_name='example_graph',folder='bacteria_interaction_network')
+biit.export_edges_to_csv('connections')
 """Plot correlation between the bacteria and the target, correlation between immune_system_features and the target """
 
 """

@@ -1,14 +1,16 @@
 from Code.Preprocessing_actions import Normalization
 from sklearn.decomposition import PCA, FastICA
-column_page_url = 'https://raw.githubusercontent.com/sharon200102/Initial_project/master/column_names_of_exported_feature-table_for_YoramL.txt'
-values_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/values_of_exported_feature-table_for_YoramL.txt'
-maping_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/mapping%20file%20with%20data%20Baniyahs%20Merge.csv'
-taxonomy_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/taxonomy.tsv'
+column_page_url = 'https://raw.githubusercontent.com/sharon200102/Initial_project/master/Projects/CRC_data/data/column_names_of_exported_feature-table_for_YoramL.txt'
+values_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/Projects/CRC_data/data/values_of_exported_feature-table_for_YoramL.txt'
+maping_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/Projects/CRC_data/data/mapping%20file%20with%20data%20Baniyahs%20Merge.csv'
+taxonomy_page_url='https://raw.githubusercontent.com/sharon200102/Initial_project/master/Projects/CRC_data/data/taxonomy.tsv'
 column_page_delimiter='\t'
 value_page_delimiter='\t'
 relevant_categorical_names=['Group','Treatment','TimePointNum']
 immune_system_features=['spleen_weight','cell_spleen','MDSC_GR1_spleen','MFI_zeta_spleen','cell_BM','MDSC_GR1_bm']
 mapping_and_general_info_columns=['BarcodeSequence','LinkerPrimerSequence','ReversePrimer','plate','Experiment','Genotype','MiceNum','CageNum','Mouse','Treatment','SampleType','DayOfSam','TimePoint','TimePointNum','TimeGroup','tumor_load','spleen_weight','cell_spleen','MDSC_GR1_spleen','MFI_zeta_spleen','cell_BM','MDSC_GR1_bm','Project','Description','WellPosition','GroupTreat','Group','Run']
+mapping_and_general_info_columns_no_identification=['#SampleID','BarcodeSequence','LinkerPrimerSequence','ReversePrimer','plate','Genotype','Mouse','Treatment','SampleType','DayOfSam','TimePoint','TimeGroup','tumor_load','spleen_weight','cell_spleen','MDSC_GR1_spleen','MFI_zeta_spleen','cell_BM','MDSC_GR1_bm','Project','Description','WellPosition','GroupTreat','Group','Run']
+identification_columns=['Experiment','MiceNum','CageNum']
 THRESHOLD=0.8
 P_VALUE_THRESHOLD=0.05
 LEVEL_TO_REDUCE=6
