@@ -15,7 +15,7 @@ from sklearn.svm import SVR
 """Load the microbiome file"""
 exported_features = DL.data_loader_exported_features(Constants.column_page_url, Constants.values_page_url)
 # load and reduce the level of taxonomy file.
-taxon = DL.taxonomy(Constants.taxonomy_page_url)
+taxon = DL.files_read_csv_fails_to_data_frame(Constants.taxonomy_page_url).drop('Confidence',axis=1)
 squashed_col = SA.decrease_level(taxon['Taxon'], Constants.LEVEL_TO_REDUCE, sep=';')
 taxon = taxon.assign(Taxon=squashed_col)
 

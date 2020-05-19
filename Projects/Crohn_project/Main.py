@@ -10,9 +10,11 @@ from biom import load_table
 
 # First load the the data including the biom type file
 biom_table = load_table(Constants.biom_file_path)
-mapping_table=pd.read_csv(Constants.mapping_file_path)
+mapping_table=DL.files_read_csv_fails_to_data_frame(Constants.mapping_file_path,1)
 # Change the taxonomy structure to fit Yoel's preprocess grid function
-taxonomy=DL.taxonomy(Constants.taxonomy_page_url).rename({'Taxon':'taxonomy'},axis=1).set_index('Feature ID').transpose()
+taxonomy=DL.files_read_csv_fails_to_data_frame(Constants.taxonomy_page_url).drop('Confidence',axis=1)
+taxonomy=taxonomy.rename({'Taxon':'taxonomy'},axis=1).set_index('Feature ID').transpose()
+
 
 # then switch the biom table to dataframe format.
 microbiome=biom_table.to_dataframe(True).transpose()
