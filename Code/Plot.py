@@ -218,11 +218,11 @@ class bacteria_intraction_in_time(object):
         self.relevant_columns=list(self.dataframe.drop(self.key_columns_names,axis=1).columns)
         self.delta_dataframe,self.feature_value_dataframe=self._group_features_development_in_subsequent_times()
         self.correlation_dataframe,self.p_value_dict=self._correlation_relationship()
-        self.edges=self._significant_pvals_to_edges()
-        self.numeric_edges=[(self.relevant_columns.index(x),self.relevant_columns.index(y)) for x,y in self.edges]
+        self.nodes,self.edges=self._remove_unconnected_nodes(self._significant_pvals_to_edges())
+        self.numeric_edges=[(self.nodes.index(x),self.nodes.index(y)) for x,y in self.edges]
         self.edges_colors=self._adjust_colors(binary_colors)
-        self.nodes=self.relevant_columns if delimiter is not None else [self._cut_node_names(name,delimiter) for name in self.relevant_columns ]
-        self.numeric_nodes=list(range(0,len(self.relevant_columns)))
+        self.nodes=self.nodes if delimiter is not None else [self._cut_node_names(name,delimiter) for name in self.nodes ]
+        self.numeric_nodes=list(range(0,len(self.nodes)))
 
     def _subsequent_times(self,group):
         time_list=sorted(list(group[self.time_feature_name]))
@@ -259,6 +259,22 @@ class bacteria_intraction_in_time(object):
         significant_pvals=multipletests(list(self.p_value_dict.values()))[0]
         edges=[edge for i,edge in enumerate(self.p_value_dict.keys()) if significant_pvals[i]]
         return edges
+
+    def _remove_unconnected_nodes(self,significant_edges):
+
+        nodes=[]
+        edges=significant_edges.copy()
+        for possible_node in self.relevant_columns:
+            self_edge=(possible_node,possible_node)
+            edges_related_to_node=list(filter(lambda x: True if x[0]==possible_node or x[1]==possible_node else False,edges))
+            if len(edges_related_to_node)==1 and edges_related_to_node[0]==(self_edge):
+                edges.remove(self_edge)
+            elif len(edges_related_to_node)>=1:
+                nodes.append(possible_node)
+        return nodes,edges
+
+
+
     def _adjust_colors(self,binary_colors):
         return list(map(lambda edge: binary_colors[0] if self.correlation_dataframe.at[edge[0],edge[1]]>0 else binary_colors[1],self.edges))
 
@@ -268,7 +284,7 @@ class bacteria_intraction_in_time(object):
 
     def plot(self,**kwargs):
         plot_bacteria_intraction_network(bacteria=self.nodes,node_list=self.numeric_nodes,edge_list=self.numeric_edges,color_list=self.edges_colors,**kwargs)
-        
+
     def export_edges_to_csv(self,name_of_file):
         edges_dataframe=pd.DataFrame(self.edges,columns=['Influential feature' ,'Affected feature'])
         edges_dataframe.to_csv('{file}.csv'.format(file=name_of_file))

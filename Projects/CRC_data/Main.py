@@ -21,9 +21,8 @@ taxon = taxon.assign(Taxon=squashed_col)
 
 
 # Merge the taxonomy with exported features and replace rows with same taxonomy with the mean of the rows.
-merged_exported_features = pd.merge(exported_features, taxon, on='#OTU_ID')
+merged_exported_features = pd.merge(exported_features, taxon, left_on='#OTU_ID',right_on='Feature ID').drop('Feature ID', axis=1)
 reduced_exported_features = merged_exported_features.groupby('Taxon').mean()
-
 """In merged_table every sample has its corresponding microbiome"""
 samples_results=SA.data_rearrangement(reduced_exported_features)
 mapping_table=pd.read_csv(Constants.maping_page_url)
@@ -67,10 +66,12 @@ samples_bacterial_data_and_identification=merged_table.drop(Constants.mapping_an
 """remove bacteria that only consist of zero """
 SA.removeZeroCols(samples_bacterial_data)
 SA.removeZeroCols(samples_bacterial_data_and_identification)
+"""Plot a dynamic graph"""
 biit=Plot.bacteria_intraction_in_time(samples_bacterial_data_and_identification,Constants.identification_columns,'TimePointNum')
 v = [100] * len(biit.relevant_columns)
-biit.plot(node_size_list=v,G_name='example_graph',folder='bacteria_interaction_network')
-biit.export_edges_to_csv('connections')
+biit.plot(node_size_list=v,G_name='Bacteria_interaction_network',folder='Bacteria_interaction_network')
+biit.export_edges_to_csv('Edges of Bacteria_interaction_network ')
+
 """Plot correlation between the bacteria and the target, correlation between immune_system_features and the target """
 
 """
@@ -100,7 +101,7 @@ if TimePoint=='All':
     new_plot=p1.plot()
     new_plot.set_title(title)
     new_plot.set_xlabel('Time')
-    new_plot.set_ylabel('Mean')
+    new_plot.set_ylabel('Mean Value')
     plt.show()
 """Look only at time point zero"""
 dec_data_at0=dec_data[merged_table['TimePointNum']==0]
