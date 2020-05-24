@@ -26,8 +26,9 @@ reduced_exported_features = merged_exported_features.groupby('Taxon').mean()
 """In merged_table every sample has its corresponding microbiome"""
 samples_results=SA.data_rearrangement(reduced_exported_features)
 mapping_table=pd.read_csv(Constants.maping_page_url)
-merged_table=pd.merge(samples_results,mapping_table,on='#SampleID')
-
+"""Because the deficiency in TP4 samples TP 5 will ve treated as TP4"""
+mapping_table_with_new_time_target=mapping_table.assign(TimePointNum=mapping_table['TimePointNum'].replace(Constants.old_target_time,Constants.target_time))
+merged_table=pd.merge(samples_results,mapping_table_with_new_time_target,on='#SampleID')
 """Get and select the wanted TimePoints"""
 TimePoint=input('Enter the time points to perform on  \n'+"\n".join(Constants.TimePoints_list)+"\n")
 if TimePoint=='0':
@@ -45,8 +46,8 @@ multi_class_tumor_load = []
 
 for cage, mice, exp in zip(merged_table['CageNum'], merged_table['MiceNum'], merged_table['Experiment']):
 
-    dic = {'CageNum': cage, 'MiceNum': mice, 'Experiment': exp, 'TimePointNum': 5}
-    item = SA.conditional_identification(mapping_table, dic)['tumor_load'].values
+    dic = {'CageNum': cage, 'MiceNum': mice, 'Experiment': exp, 'TimePointNum': Constants.target_time}
+    item = SA.conditional_identification(merged_table, dic)['tumor_load'].values
     if (len(item) == 0):
         merged_table.drop(idx, inplace=True)
     else:
