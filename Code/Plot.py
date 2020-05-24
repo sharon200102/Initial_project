@@ -200,6 +200,7 @@ class progress_in_time_of_column_attribute_mean(object):
         self.new_plot.set_ylim(bottom=bottom_lim-total_margin,top=top_lim+total_margin)
 
     def plot(self):
+        self.new_plot.set_xticks(sorted(self.time_series.unique()))
         self._add_lines()
         if self.attribute_series is not None:
             self._add_asterisks()
