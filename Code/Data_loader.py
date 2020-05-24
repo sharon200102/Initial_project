@@ -10,6 +10,18 @@ def data_loader_exported_features(column_page_url,values_page_url,column_delimit
     exported_features=pd.read_csv(values_page_url,header=None,names=column_name_list,delimiter=value_delimiter)
     return exported_features
 
+
+
+"""
+The function goal is to solve cases where pandas read_csv transformation fails because of separability reason's.
+Parameters:
+file_path- can be either a path to a local file or a link to github repository data.
+amount_of_column_name_rows_in_file- The amount of rows that the column names take in the given file. 
+columns_sep- the separator note that separates between column names.
+data_sep- the separator note that separates between the data values.
+decoder- the decoding method, only relavent for github repository data.    
+
+"""
 def files_read_csv_fails_to_data_frame(file_path, amount_of_column_name_rows_in_file=1, columns_sep='\t', data_sep='\t', decoder="utf-8"):
   column_names=[]
   data_rows=[]
