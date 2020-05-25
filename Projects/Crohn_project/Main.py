@@ -2,19 +2,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import sys
-
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn import linear_model
 import Projects.Crohn_project.Constants as Constants
 from Code import Data_loader as DL
+import Code.Plot as Plot
 
 sys.path.append(r"C:\sharon\second_degree\microbiome")
 import infra_functions.preprocess_grid as preprocess_grid
 #download and import the biom library
 from biom import load_table
-import Code.Plot as Plot
 from sklearn.model_selection import cross_validate
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
+from sklearn import linear_model
 
 
 # First load the the data including the biom type file
@@ -32,7 +30,7 @@ microbiome.index.name='ID'
 # Add the taxonomy row to the biom dataframe (Yoel's documentation)
 merged_microbiome_taxonomy = pd.concat([microbiome,taxonomy])
 merged_microbiome_taxonomy.dropna(axis=1,inplace=True)
-dict={'taxonomy_level':6,'taxnomy_group':'mean','epsilon':1,'normalization':'log','z_scoring':False,'norm_after_rel':False,'pca':16,'std_to_delete':0}
+dict={'taxonomy_level':6,'taxnomy_group':'mean','epsilon':1,'normalization':'log','z_scoring':False,'norm_after_rel':False,'pca':15,'std_to_delete':0}
 dec_data,merged_microbiome_taxonomy_b_pca,_ =preprocess_grid.preprocess_data(merged_microbiome_taxonomy,dict,mapping_table,'Crohn_data',False)[0:3]
 #------------------------------------------------------------------------------------------------------------------------
 # Plot Correlation
@@ -51,15 +49,15 @@ Plot.relationship_between_features(dec_data,'relationship_between_features',colo
 Plot.relationship_between_features(dec_data,'relationship_between_features',color=dec_data_with_mapping_features['family_background_of_crohns'],title="relationship_between_features colored by family_background")
 #------------------------------------------------------------------------------------------------------------------------
 # Regression
-"""
+
 dec_data_with_no_nan=dec_data[dec_data_with_mapping_features['CRP_n']!='NA']
 crp_n_no_nan=dec_data_with_mapping_features['CRP_n'][dec_data_with_mapping_features['CRP_n']!='NA']
 test_loss = []
 train_loss = []
-range=range(1,20)
-for n in range:
-    neigh = KNeighborsRegressor(n_neighbors=n)
-    result = cross_validate(n,dec_data_with_no_nan,crp_n_no_nan,cv=4,return_train_score=True)
+range=[ 5+n/20 for n in range(1,101)]
+for C in range:
+    clf = linear_model.Ridge(alpha=C)
+    result = cross_validate(clf,dec_data_with_no_nan,crp_n_no_nan,cv=Constants.N_SPLITS,return_train_score=True)
     train_loss.append(result['train_score'].mean())
     test_loss.append((result['test_score'].mean()))
 fig,ax=plt.subplots()
@@ -70,5 +68,5 @@ ax.set_xlabel('regularization')
 ax.set_ylabel('R2')
 ax.legend()
 plt.show()
-"""
+
 
