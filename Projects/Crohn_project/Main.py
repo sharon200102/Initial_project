@@ -1,23 +1,22 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import sys
 import Projects.Crohn_project.Constants as Constants
 from Code import Data_loader as DL
 import Code.Plot as Plot
-
-sys.path.append(r"C:\sharon\second_degree\microbiome")
 import infra_functions.preprocess_grid as preprocess_grid
 #download and import the biom library
 from biom import load_table
 from sklearn.model_selection import cross_validate
 from sklearn.svm import SVR
 from sklearn import linear_model
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # First load the the data including the biom type file
-biom_table = load_table(Constants.biom_file_path)
-mapping_table=DL.files_read_csv_fails_to_data_frame(Constants.mapping_file_path,1)
+biom_table = load_table(os.path.join(script_dir,Constants.biom_file_path))
+mapping_table=DL.files_read_csv_fails_to_data_frame(os.path.join(script_dir,Constants.mapping_file_path),1)
 
 # Change the taxonomy structure to fit Yoel's preprocess grid function
 taxonomy=DL.files_read_csv_fails_to_data_frame(Constants.taxonomy_page_url).drop('Confidence',axis=1)
@@ -31,13 +30,13 @@ microbiome.index.name='ID'
 merged_microbiome_taxonomy = pd.concat([microbiome,taxonomy])
 merged_microbiome_taxonomy.dropna(axis=1,inplace=True)
 dict={'taxonomy_level':6,'taxnomy_group':'mean','epsilon':1,'normalization':'log','z_scoring':False,'norm_after_rel':False,'pca':15,'std_to_delete':0}
-dec_data,merged_microbiome_taxonomy_b_pca,_ =preprocess_grid.preprocess_data(merged_microbiome_taxonomy,dict,mapping_table,'Crohn_data',False)[0:3]
+dec_data,merged_microbiome_taxonomy_b_pca,_ = preprocess_grid.preprocess_data(merged_microbiome_taxonomy,dict,mapping_table,'Crohn_data',False)[0:3]
 #------------------------------------------------------------------------------------------------------------------------
 # Plot Correlation
 merged_microbiome_taxonomy_b_pca_with_mapping_features=merged_microbiome_taxonomy_b_pca.merge(mapping_table[['SampleID','CRP_n']],left_index=True,right_on='SampleID').set_index('SampleID')
 target=merged_microbiome_taxonomy_b_pca_with_mapping_features['CRP_n']
-Plot.draw_rhos_calculation_figure(target,merged_microbiome_taxonomy_b_pca_with_mapping_features.drop('CRP_n',axis=1),'Correlation between bacteria and target',6,save_folder='Graphs\Correlation\Bacteria')
-Plot.draw_rhos_calculation_figure(mapping_table['CRP_n'],mapping_table[Constants.mapping_file_numeric_columns_relvant_to_correlation],'Correlation between numeric features and target',6,save_folder='Graphs\Correlation\Others')
+Plot.draw_rhos_calculation_figure(target,merged_microbiome_taxonomy_b_pca_with_mapping_features.drop('CRP_n',axis=1),'Correlation between bacteria and target',6,save_folder=Constants.path_of_correlation_between_bacteria_and_target)
+Plot.draw_rhos_calculation_figure(mapping_table['CRP_n'],mapping_table[Constants.mapping_file_numeric_columns_relvant_to_correlation],'Correlation between numeric features and target',6,save_folder=Constants.path_of_correlation_between_numeric_features_and_target)
 #------------------------------------------------------------------------------------------------------------------------
 #visualization
 # Merge with the mapping table to gather more info on each sample

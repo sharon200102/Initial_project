@@ -7,12 +7,10 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import numpy as np
 import pandas as pd
-from math import log10
 import os
 from os.path import join
 from statsmodels.stats.multitest import multipletests
 import sys
-sys.path.append(r"C:\sharon\second_degree\microbiome")
 from Plot.plot_bacteria_intraction_network import plot_bacteria_intraction_network
 plt.rcParams["image.cmap"] = "Set1"
 
