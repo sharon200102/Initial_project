@@ -11,6 +11,7 @@ import os
 from os.path import join
 from statsmodels.stats.multitest import multipletests
 import sys
+import seaborn as sns
 from Plot.plot_bacteria_intraction_network import plot_bacteria_intraction_network
 plt.rcParams["image.cmap"] = "Set1"
 
@@ -443,3 +444,43 @@ def draw_rhos_calculation_figure(id_to_binary_tag_map, preproccessed_data, title
         plt.savefig(join(save_folder, "pos_neg_correlation_at_" + title.replace(" ", "_")
                          + "_taxnomy_level_" + str(taxnomy_level) + ".svg"), bbox_inches='tight', format='svg')
     plt.close()
+
+
+
+
+class categorical_vs_numeric_features_plot:
+    def __init__(self,dataframe,categorical_features_names,numeric_features_names,default_stats_function=sns.barplot,default_hue=None,**kwargs):
+        self.data=dataframe.copy()
+        self.categorical_features_names=categorical_features_names
+        self.numeric_features_names=numeric_features_names
+        self.fig,self.grid=plt.subplots(len(self.categorical_features_names),len(self.numeric_features_names),squeeze=False,**kwargs)
+        self.default_stats_function=default_stats_function
+        self.default_hue=default_hue
+
+
+    def map_grid(self,stats_function_dict={},hue_dict={},kwargs_dict={}):
+        """
+
+        :param stats_function_dict:
+        :param hue_dict:
+        :param kwargs_dict:
+        :return:
+        """
+        for i, num_name in enumerate(self.numeric_features_names):
+            self.data[num_name]=pd.to_numeric(self.data[num_name],'coerce')
+            for j,cat_name in enumerate(self.categorical_features_names):
+                current_ax=self.grid[j][i]
+                stats_function_dict.get((cat_name,num_name),self.default_stats_function)(cat_name,num_name,hue_dict.get((cat_name,num_name),self.default_hue),data=self.data,**kwargs_dict.get((cat_name,num_name),{}),ax=current_ax)
+                current_ax.set_xlabel(cat_name)
+                current_ax.set_ylabel(num_name)
+                plt.tight_layout()
+        return self.fig,self.grid
+
+
+
+
+
+
+
+
+

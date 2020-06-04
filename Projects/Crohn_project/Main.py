@@ -11,13 +11,22 @@ from sklearn.model_selection import cross_validate
 from sklearn.svm import SVR
 from sklearn import linear_model
 import os
+import seaborn as sns
+# In this script we will use paths that are relative to the main script absolute path.
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # First load the the data including the biom type file
 biom_table = load_table(os.path.join(script_dir,Constants.biom_file_path))
 mapping_table=DL.files_read_csv_fails_to_data_frame(os.path.join(script_dir,Constants.mapping_file_path),1)
-
+#------------------------------------------------------------------------------------------------------------------------
+# visualize the rea;tionship between the categorical features and the continuous features in one plot.
+vis1=Plot.categorical_vs_numeric_features_plot(mapping_table,Constants.categorical_features_names,Constants.numerical_features_names,figsize=(15,15))
+fig,grid=vis1.map_grid(hue_dict={('Group','CRP_n'):'family_background_of_crohns'})
+for row in grid:
+    for ax in row:
+        ax.tick_params(axis="x", labelsize=6.5)
+plt.show()
 # Change the taxonomy structure to fit Yoel's preprocess grid function
 taxonomy=DL.files_read_csv_fails_to_data_frame(Constants.taxonomy_page_url).drop('Confidence',axis=1)
 taxonomy=taxonomy.rename({'Taxon':'taxonomy'},axis=1).set_index('Feature ID').transpose()
@@ -43,9 +52,9 @@ Plot.draw_rhos_calculation_figure(mapping_table['CRP_n'],mapping_table[Constants
 
 dec_data_with_mapping_features=dec_data.merge(mapping_table,left_index=True,right_on='SampleID').set_index('SampleID')
 
-Plot.relationship_between_features(dec_data,'relationship_between_features',title="relationship_between_features colored by group2",color=dec_data_with_mapping_features['Group2'])
-Plot.relationship_between_features(dec_data,'relationship_between_features',color=dec_data_with_mapping_features['smoking'],title="relationship_between_features colored by smoking")
-Plot.relationship_between_features(dec_data,'relationship_between_features',color=dec_data_with_mapping_features['family_background_of_crohns'],title="relationship_between_features colored by family_background")
+Plot.relationship_between_features(dec_data,'relationship_between_features',title="relationship between features colored by group2",color=dec_data_with_mapping_features['Group2'])
+Plot.relationship_between_features(dec_data,'relationship_between_features',color=dec_data_with_mapping_features['smoking'],title="relationship between features colored by smoking")
+Plot.relationship_between_features(dec_data,'relationship_between_features',color=dec_data_with_mapping_features['family_background_of_crohns'],title="relationship between features colored by family background")
 #------------------------------------------------------------------------------------------------------------------------
 # Regression
 

@@ -6,3 +6,5 @@ N_SPLITS=2
 mapping_file_numeric_columns_relvant_to_correlation=['months_since_start','Age','BMI','months_since_first_visit','Cal','CDAI','IBD_hospitalizations','flares_with_treatment_in_the_last_year','flares_with_treatment_since_diagnosis_per_year','HGB','weight_kg','disease_duration','Uri_MaRIAsc','Uri_Clermontsc','smoking_number_of_cigarettes_per_day', 'smoking_number_of_years','height_cm','date_of_diagnosis','age_at_diagnosis']
 path_of_correlation_between_bacteria_and_target=Path('Graphs/Correlation/Bacteria')
 path_of_correlation_between_numeric_features_and_target=Path('Graphs/Correlation/Others')
+numerical_features_names=['CRP_n','Cal_n','CDAI_n','highest_lewis_score','HGB']
+categorical_features_names=['family_background_of_crohns','smoking_binary','Group']
