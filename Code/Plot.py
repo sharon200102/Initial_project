@@ -458,14 +458,7 @@ class categorical_vs_numeric_features_plot:
         self.default_hue=default_hue
 
 
-    def map_grid(self,stats_function_dict={},hue_dict={},kwargs_dict={}):
-        """
-
-        :param stats_function_dict:
-        :param hue_dict:
-        :param kwargs_dict:
-        :return:
-        """
+    def map_grid(self,stats_function_dict={},hue_dict={},kwargs_dict={},**kwargs):
         for i, num_name in enumerate(self.numeric_features_names):
             self.data[num_name]=pd.to_numeric(self.data[num_name],'coerce')
             for j,cat_name in enumerate(self.categorical_features_names):
