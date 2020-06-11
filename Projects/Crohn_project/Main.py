@@ -14,6 +14,8 @@ import os
 import seaborn as sns
 import pickle
 # In this script we will use paths that are relative to the main script absolute path.
+from LearningMethods.multi_model_learning import multi_model_learning_main
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -53,3 +55,4 @@ if target_feature=='Group2':
     a_file = open(Constants.pca_obj_path_to_save, "wb")
     pickle.dump(pca_obj,a_file)
     mapping_table.to_csv(Constants.mapping_file_with_tag_path_to_save)
+    multi_model_learning_main(Constants.results_folder, Constants.dec_data_path_to_save, Constants.mapping_file_with_tag_path_to_save, Constants.pca_obj_path_to_save, dict)
