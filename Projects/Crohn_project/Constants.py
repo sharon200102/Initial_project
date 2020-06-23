@@ -67,5 +67,6 @@ learning_method_parameters = {"TASK_TITLE": "Crohn_active_prediciton",  # the na
             # enter to model params?  might want to change for different models..
             "K_FOLD": k_fold,
             "TEST_SIZE": test_size,
+            "Folder":"models_results"
             #  ...... add whatever
             }

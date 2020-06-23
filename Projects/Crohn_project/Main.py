@@ -11,11 +11,11 @@ from sklearn.model_selection import cross_validate
 from sklearn.svm import SVR
 from sklearn import linear_model
 import os
+from LearningMethods.general_functions import train_test_split
 import seaborn as sns
 import pickle
+from LearningMethods.multi_model_learning import MultiModel
 # In this script we will use paths that are relative to the main script absolute path.
-from LearningMethods.multi_model_learning import multi_model_learning_main
-
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -50,9 +50,10 @@ target_feature=input('\n What feature you would like to use as a target\n')
 if target_feature=='Group2':
     mapping_table.rename({target_feature:'Tag'},axis=1,inplace=True)
     mapping_table=mapping_table.assign(Tag=mapping_table['Tag'].transform(lambda status:Constants.active_dict.get(status,0)))
-
-    dec_data.to_csv(Constants.dec_data_path_to_save)
-    a_file = open(Constants.pca_obj_path_to_save, "wb")
-    pickle.dump(pca_obj,a_file)
-    mapping_table.to_csv(Constants.mapping_file_with_tag_path_to_save)
-    multi_model_learning_main(Constants.results_folder, Constants.dec_data_path_to_save, Constants.mapping_file_with_tag_path_to_save, Constants.pca_obj_path_to_save, dict)
+    dec_data,target_df=preprocess_grid.adjust_table_to_target(dec_data,mapping_table,right_on='SampleID',left_index=True)
+    train_idx_list,test_idx_list=train_test_split(dec_data,target_df['Tag'],target_df['patient_No'],random_state=1)
+    learning_method_parameters=Constants.learning_method_parameters
+    learning_method_parameters['Bacteria']=bacteria
+    learning_method_parameters['PCA']=pca_obj
+    mm=MultiModel(learning_method_parameters)
+    mm.fit(dec_data,target_df['Tag'],train_idx_list,test_idx_list,train_idx_list,test_idx_list)
