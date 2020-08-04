@@ -15,48 +15,48 @@ mapping_file_with_tag_path_to_save=Path('exports_for_learning_methods/mapping_fi
 tax = str(6)
 k_fold = 5
 test_size = 0.2
-names = ["no anxiety", "anxiety"]
+names = ["Not Active", "Active"]
 results_folder='results'
 learning_method_parameters = {"TASK_TITLE": "Crohn_active_prediciton",  # the name of the task for plots titles...
             "FOLDER_TITLE": 'results',  # creates the folder for the task we want to do, save results in it
             "TAX_LEVEL": tax,
             "CLASSES_NAMES": names,
-            "SVM": True,
-            "SVM_params": {'kernel': ['linear'],
+            "SVM": False,
+            "SVM_params": {'kernel': ['linear','poly','sigmoid'],
                            'gamma': ['auto', 'scale'],
-                           'C': [0.01, 0.1, 1, 10, 100, 1000],
-                           "create_coeff_plots": True,
+                           'C': [0.01*5**i for i in range(0,11)],
+                           "create_coeff_plots": False,
                            "CLASSES_NAMES": names,
                            "K_FOLD": k_fold,
                            "TEST_SIZE": test_size,
-                           "TASK_TITLE": "sderot_anxiety"
+                           "TASK_TITLE": "Active_prediction"
                            },
             # if single option for each param -> single run, otherwise -> grid search.
-            "XGB": True,
-            "XGB_params": {'learning_rate': [0.1],
+            "XGB": False,
+            "XGB_params": {'learning_rate': [0.3,0.4,0.5],
                            'objective': ['binary:logistic'],
-                           'n_estimators': [1000],
-                           'max_depth': [7],
-                           'min_child_weight': [1],
-                           'gamma': [1],
-                           "create_coeff_plots": True,
+                           'n_estimators': [500,1000],
+                           'max_depth': [6,7,8],
+                           'min_child_weight': [1,2,3,4],
+                           'gamma': [0.001,0.01,0.1],
+                           "create_coeff_plots": False,
                            "CLASSES_NAMES": names,
                            "K_FOLD": k_fold,
                            "TEST_SIZE": test_size,
-                           "TASK_TITLE": "sderot_anxiety"
+                           "TASK_TITLE": "Active_prediction"
                            },  # if single option for each param -> single run, otherwise -> grid search.
             "NN": True,
             "NN_params": {
-                        "hid_dim_0": 120,
-                        "hid_dim_1": 160,
-                        "reg": 0.68,
-                        "lr": 0.001,
-                        "test_size": 0.1,
-                        "batch_size": 32,
+                        "hid_dim_0": 50,
+                        "hid_dim_1": 50,
+                        "reg": 0.32,
+                        "lr": 0.01,
+                        "test_size": 0.2,
+                        "batch_size": 16,
                         "shuffle": 1,
-                        "num_workers": 4,
-                        "epochs": 150,
-                        "optimizer": 'SGD',
+                        "num_workers": 0,
+                        "epochs": 20,
+                        "optimizer": 'Adam',
                         "loss": 'MSE',
                         "model": 'tanh_b'
             },  # if single option for each param -> single run, otherwise -> grid search.
