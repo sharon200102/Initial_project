@@ -79,18 +79,19 @@ if correlation_plots:
 
     biit=Plot.bacteria_intraction_in_time(samples_bacterial_data_and_identification,Constants.identification_columns,'TimePointNum')
     v = [100] * len(biit.relevant_columns)
-    biit.plot(node_size_list=v,G_name='Bacteria_interaction_network',folder='Bacteria_interaction_network')
-    biit.export_edges_to_csv('Edges of Bacteria_interaction_network ')
+    biit.plot(node_size_list=v,G_name='Bacteria_interaction_network_{Group}'.format(Group=Group),folder='Bacteria_interaction_network_{Group}'.format(Group=Group))
+    biit.export_edges_to_csv('Edges of Bacteria_interaction_network_{Group}'.format(Group=Group))
 
     """Plot correlation between the bacteria and the target, correlation between immune_system_features and the target """
 
 
-    Plot.draw_rhos_calculation_figure(multi_class_tumor_load,samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and target',6,save_folder='Graphs\Correlation\Bacteria')
-    Plot.draw_rhos_calculation_figure(merged_table['tumor_load'],merged_table[Constants.immune_system_features],'Correlation between immune system parameters and the target',6,save_folder='Graphs\Correlation\Others')
+    Plot.draw_rhos_calculation_figure(multi_class_tumor_load,samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and target',6,save_folder='Graphs\Correlation\Bacteria_{Group}'.format(Group=Group))
+    Plot.draw_rhos_calculation_figure(merged_table['tumor_load'],merged_table[Constants.immune_system_features],'Correlation between immune system parameters and the target',6,save_folder='Graphs\Correlation\Others_{Group}'.format(Group=Group))
 
 
 """Remove highly correlated columns"""
-uncorr_data=SA.dropHighCorr(samples_bacterial_data,Constants.THRESHOLD)
+THRESHOLD=Constants.THRESHOLD_dict[Group]
+uncorr_data=SA.dropHighCorr(samples_bacterial_data,THRESHOLD)
 
 """Get an Normalization function from the user and normaliaze the data according to it"""
 normalization_fn_name=input('Enter the normalization function wanted \n'+"\n".join(Constants.normalization_dict.keys())+"\n")
@@ -101,7 +102,7 @@ dimension_fn_name=input('Enter the dimensionality reduction function wanted \n P
 dec_obj,dec_data=decompose(normalized_data,Constants.dimension_reduction_dict[dimension_fn_name],n_components=5,random_state=1)
 
 """Visualizations after decomposition, different visualizations will be performed based on initially selected time points"""
-labels_dict={1:'Tumor',0:'No tumor'}
+labels_dict=Constants.relationship_between_features_labels[Group]
 title='Data after {fn} relationship between features '.format(fn=dimension_fn_name)
 Plot.relationship_between_features(dec_data,folder='Graphs',color=binary_tumor_load,title=title,labels_dict=labels_dict)
 
@@ -139,7 +140,7 @@ for neighbors in range(1,Constants.MAX_NIGH):
 plt.plot(range(1,Constants.MAX_NIGH),percentage,marker='o',markersize=15,markerfacecolor='red')
 plt.title('Model : {pred} KNN \nDimension_fn : {dim} \nCorrelation_threshold : {'
 'corr_TH}\nNormalization_fn : {norm}\n'.format(pred=kind_of_prediction,
-                                                              dim=dimension_fn_name,corr_TH=str(Constants.THRESHOLD),
+                                                              dim=dimension_fn_name,corr_TH=str(THRESHOLD),
                                                               norm=normalization_fn_name))
 plt.ylabel(eval_fn_name)
 plt.xlabel('K neighbors')
