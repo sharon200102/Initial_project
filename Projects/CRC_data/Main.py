@@ -87,8 +87,8 @@ if correlation_plots:
 
     Plot.draw_rhos_calculation_figure(multi_class_tumor_load,samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and target',6,save_folder='Graphs\Correlation\Bacteria_{Group}'.format(Group=Group))
     Plot.draw_rhos_calculation_figure(merged_table['tumor_load'],merged_table[Constants.immune_system_features],'Correlation between immune system parameters and the target',6,save_folder='Graphs\Correlation\Others_{Group}'.format(Group=Group))
-    Plot.draw_rhos_calculation_figure(multi_class_tumor_load,samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and target',6,save_folder='Graphs\Correlation\Bacteria_{Group}'.format(Group=Group))
-    Plot.draw_rhos_calculation_figure(merged_table['Group'],samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and mice group',6,save_folder='Graphs\Correlation\Bacteria_{Group}'.format(Group=Group))
+    if Group !='CRC':
+        Plot.draw_rhos_calculation_figure(merged_table['Group'],samples_bacterial_data.drop('#SampleID',axis=1),'Correlation between bacteria and mice group',6,save_folder='Graphs\Correlation\Bacteria_{Group}'.format(Group=Group))
 
 
 """Remove highly correlated columns"""

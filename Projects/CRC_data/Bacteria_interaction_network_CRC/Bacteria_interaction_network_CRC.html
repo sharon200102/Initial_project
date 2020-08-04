@@ -1,0 +1,114 @@
+<html>
+<head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.css" type="text/css" />
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis-network.min.js"> </script>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+
+<style type="text/css">
+
+        #mynetwork {
+            width: 100%;
+            height: 750px;
+            background-color: #FFFFFF;
+            border: 1px solid lightgray;
+            position: relative;
+            float: left;
+        }
+
+        
+
+        
+
+        
+</style>
+
+</head>
+
+<body>
+<div id = "mynetwork"></div>
+
+
+<script type="text/javascript">
+
+    // initialize global variables.
+    var edges;
+    var nodes;
+    var network; 
+    var container;
+    var options, data;
+
+    
+    // This method is responsible for drawing the graph, returns the drawn network
+    function drawGraph() {
+        var container = document.getElementById('mynetwork');
+        
+        
+
+        // parsing and collecting nodes and edges from the python
+        nodes = new vis.DataSet([{"color": "#EE831E", "font": {"color": "black"}, "group": "o__Bacteroidales", "id": 0, "label": "o__Bacteroidales", "shape": "dot", "value": 100}, {"color": "#F01EE6", "font": {"color": "black"}, "group": "g__Bacteroides", "id": 1, "label": "g__Bacteroides", "shape": "triangle", "value": 100}, {"color": "#773326", "font": {"color": "black"}, "group": "g__Chryseobacterium", "id": 2, "label": "g__Chryseobacterium", "shape": "diamond", "value": 100}, {"color": "#040404", "font": {"color": "black"}, "group": "g__Enterococcus", "id": 3, "label": "g__Enterococcus", "shape": "triangle", "value": 100}, {"color": "#CD1414", "font": {"color": "black"}, "group": "g__Weissella", "id": 4, "label": "g__Weissella", "shape": "diamond", "value": 100}, {"color": "#ABE0D6", "font": {"color": "black"}, "group": "g__Lactococcus", "id": 5, "label": "g__Lactococcus", "shape": "diamond", "value": 100}, {"color": "#F0E31E", "font": {"color": "black"}, "group": "o__Clostridiales", "id": 6, "label": "o__Clostridiales", "shape": "star", "value": 100}, {"color": "#1EF08D", "font": {"color": "black"}, "group": "g__", "id": 7, "label": "g__", "shape": "triangleDown", "value": 100}, {"color": "#695B18", "font": {"color": "black"}, "group": "g__Dehalobacterium", "id": 8, "label": "g__Dehalobacterium", "shape": "dot", "value": 100}, {"color": "#EE831E", "font": {"color": "black"}, "group": "f__Lachnospiraceae", "id": 9, "label": "f__Lachnospiraceae", "shape": "dot", "value": 100}, {"color": "#1EF08D", "font": {"color": "black"}, "group": "g__", "id": 10, "label": "g__", "shape": "triangleDown", "value": 100}, {"color": "#F01E5A", "font": {"color": "black"}, "group": "g__Blautia", "id": 11, "label": "g__Blautia", "shape": "triangleDown", "value": 100}, {"color": "#F0E31E", "font": {"color": "black"}, "group": "f__Peptostreptococcaceae", "id": 12, "label": "f__Peptostreptococcaceae", "shape": "star", "value": 100}, {"color": "#91F01E", "font": {"color": "black"}, "group": "f__Ruminococcaceae", "id": 13, "label": "f__Ruminococcaceae", "shape": "triangle", "value": 100}, {"color": "#1EF08D", "font": {"color": "black"}, "group": "g__", "id": 14, "label": "g__", "shape": "triangleDown", "value": 100}, {"color": "#671EF0", "font": {"color": "black"}, "group": "g__Anaerotruncus", "id": 15, "label": "g__Anaerotruncus", "shape": "star", "value": 100}, {"color": "#ABBDE0", "font": {"color": "black"}, "group": "g__Oscillospira", "id": 16, "label": "g__Oscillospira", "shape": "dot", "value": 100}, {"color": "#DCBFEC", "font": {"color": "black"}, "group": "g__Ruminococcus", "id": 17, "label": "g__Ruminococcus", "shape": "star", "value": 100}, {"color": "#0400FF", "font": {"color": "black"}, "group": "g__Victivallis", "id": 18, "label": "g__Victivallis", "shape": "triangleDown", "value": 100}, {"color": "#ECBFD7", "font": {"color": "black"}, "group": "g__Sphingomonas", "id": 19, "label": "g__Sphingomonas", "shape": "triangle", "value": 100}, {"color": "#787A6E", "font": {"color": "black"}, "group": "g__Desulfovibrio", "id": 20, "label": "g__Desulfovibrio", "shape": "star", "value": 100}, {"color": "#1EF08D", "font": {"color": "black"}, "group": "g__", "id": 21, "label": "g__", "shape": "triangleDown", "value": 100}, {"color": "#1E4EF0", "font": {"color": "black"}, "group": "g__Aggregatibacter", "id": 22, "label": "g__Aggregatibacter", "shape": "dot", "value": 100}, {"color": "#1EDAF0", "font": {"color": "black"}, "group": "g__Acinetobacter", "id": 23, "label": "g__Acinetobacter", "shape": "diamond", "value": 100}, {"color": "#1C440E", "font": {"color": "black"}, "group": "g__Haloferula", "id": 24, "label": "g__Haloferula", "shape": "triangleDown", "value": 100}, {"color": "#CD1414", "font": {"color": "black"}, "group": "TimePointNum", "id": 25, "label": "TimePointNum", "shape": "diamond", "value": 100}]);
+        edges = new vis.DataSet([{"arrows": "to", "color": "\t#0eff00", "from": 0, "to": 0}, {"arrows": "to", "color": "#ff0000", "from": 15, "to": 2}, {"arrows": "to", "color": "\t#0eff00", "from": 3, "to": 3}, {"arrows": "to", "color": "\t#0eff00", "from": 11, "to": 3}, {"arrows": "to", "color": "#ff0000", "from": 12, "to": 4}, {"arrows": "to", "color": "#ff0000", "from": 1, "to": 5}, {"arrows": "to", "color": "#ff0000", "from": 25, "to": 5}, {"arrows": "to", "color": "\t#0eff00", "from": 6, "to": 7}, {"arrows": "to", "color": "\t#0eff00", "from": 7, "to": 7}, {"arrows": "to", "color": "\t#0eff00", "from": 9, "to": 7}, {"arrows": "to", "color": "\t#0eff00", "from": 16, "to": 7}, {"arrows": "to", "color": "\t#0eff00", "from": 10, "to": 10}, {"arrows": "to", "color": "\t#0eff00", "from": 20, "to": 10}, {"arrows": "to", "color": "\t#0eff00", "from": 3, "to": 11}, {"arrows": "to", "color": "\t#0eff00", "from": 11, "to": 11}, {"arrows": "to", "color": "\t#0eff00", "from": 12, "to": 12}, {"arrows": "to", "color": "\t#0eff00", "from": 9, "to": 13}, {"arrows": "to", "color": "\t#0eff00", "from": 13, "to": 13}, {"arrows": "to", "color": "\t#0eff00", "from": 14, "to": 14}, {"arrows": "to", "color": "\t#0eff00", "from": 15, "to": 15}, {"arrows": "to", "color": "\t#0eff00", "from": 8, "to": 16}, {"arrows": "to", "color": "\t#0eff00", "from": 16, "to": 16}, {"arrows": "to", "color": "\t#0eff00", "from": 20, "to": 16}, {"arrows": "to", "color": "\t#0eff00", "from": 14, "to": 17}, {"arrows": "to", "color": "\t#0eff00", "from": 17, "to": 17}, {"arrows": "to", "color": "#ff0000", "from": 3, "to": 18}, {"arrows": "to", "color": "#ff0000", "from": 11, "to": 18}, {"arrows": "to", "color": "#ff0000", "from": 12, "to": 18}, {"arrows": "to", "color": "\t#0eff00", "from": 19, "to": 19}, {"arrows": "to", "color": "#ff0000", "from": 22, "to": 19}, {"arrows": "to", "color": "\t#0eff00", "from": 20, "to": 20}, {"arrows": "to", "color": "#ff0000", "from": 19, "to": 21}, {"arrows": "to", "color": "\t#0eff00", "from": 22, "to": 22}, {"arrows": "to", "color": "#ff0000", "from": 15, "to": 23}, {"arrows": "to", "color": "#ff0000", "from": 0, "to": 24}, {"arrows": "to", "color": "\t#0eff00", "from": 24, "to": 24}]);
+
+        // adding nodes and edges to the graph
+        data = {nodes: nodes, edges: edges};
+
+        var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": false,
+            "type": "continuous"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "forceAtlas2Based": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.01,
+            "damping": 0.4,
+            "gravitationalConstant": -50,
+            "springConstant": 0.08,
+            "springLength": 100
+        },
+        "solver": "forceAtlas2Based",
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+        
+        
+
+        
+
+        network = new vis.Network(container, data, options);
+
+        
+
+
+        
+
+        return network;
+
+    }
+
+    drawGraph();
+
+</script>
+</body>
+</html>
