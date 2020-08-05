@@ -487,7 +487,7 @@ def visualize_components(components,name_of_features,name_of_components=None,**k
     """
     ax=plt.subplot(111)
     if name_of_components is None:
-        name_of_components=['component'+str(i) for i in range(1,len(components+1))]
+        name_of_components=['Component '+str(i) for i in range(1,len(components)+1)]
     if len(components.shape)==1:
         components=components.reshape((1,-1))
     for component,name in zip(components,name_of_components):

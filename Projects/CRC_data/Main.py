@@ -102,7 +102,8 @@ normalized_data= Constants.normalization_dict[normalization_fn_name](uncorr_data
 dimension_fn_name=input('Enter the dimensionality reduction function wanted \n PCA \n ICA \n')
 dec_obj,dec_data=decompose(normalized_data,Constants.dimension_reduction_dict[dimension_fn_name],n_components=5,random_state=1)
 if dimension_fn_name=='PCA':
-    Plot.visualize_components(dec_obj.components_[0],normalized_data.columns,name_of_components=['Component 1'],rotation=90,fontdict={'fontsize':4.5})
+    ax=Plot.visualize_components(dec_obj.components_,normalized_data.columns,rotation=90,fontdict={'fontsize':5})
+    ax.set_title('Importance of each feature')
     plt.show()
 """Visualizations after decomposition, different visualizations will be performed based on initially selected time points"""
 labels_dict=Constants.relationship_between_features_labels[Group]
