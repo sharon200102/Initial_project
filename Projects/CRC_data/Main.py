@@ -73,7 +73,7 @@ samples_bacterial_data_and_identification=merged_table.drop(Constants.mapping_an
 SA.removeZeroCols(samples_bacterial_data)
 SA.removeZeroCols(samples_bacterial_data_and_identification)
 
-correlation_plots=True
+correlation_plots=False
 if correlation_plots:
     """Plot a dynamic graph"""
 
@@ -98,11 +98,12 @@ uncorr_data=SA.dropHighCorr(samples_bacterial_data,THRESHOLD)
 """Get an Normalization function from the user and normaliaze the data according to it"""
 normalization_fn_name=input('Enter the normalization function wanted \n'+"\n".join(Constants.normalization_dict.keys())+"\n")
 normalized_data= Constants.normalization_dict[normalization_fn_name](uncorr_data, *Constants.normalization_parameters_dict[normalization_fn_name])
-
 """Dimension reduction"""
 dimension_fn_name=input('Enter the dimensionality reduction function wanted \n PCA \n ICA \n')
 dec_obj,dec_data=decompose(normalized_data,Constants.dimension_reduction_dict[dimension_fn_name],n_components=5,random_state=1)
-
+if dimension_fn_name=='PCA':
+    Plot.visualize_components(dec_obj.components_[0],normalized_data.columns,name_of_components=['Component 1'],rotation=90,fontdict={'fontsize':4.5})
+    plt.show()
 """Visualizations after decomposition, different visualizations will be performed based on initially selected time points"""
 labels_dict=Constants.relationship_between_features_labels[Group]
 title='Data after {fn} relationship between features '.format(fn=dimension_fn_name)

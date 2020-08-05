@@ -476,7 +476,29 @@ class categorical_vs_numeric_features_plot:
                 plt.tight_layout()
         return self.fig,self.grid
 
+def visualize_components(components,name_of_features,name_of_components=None,**kwargs):
+    """
+    The function will plot the importance of each feature in linear combination creating each principal component.
+    :param components The easiest way to obtain this input is by using pca.components_ :
+    :param name_of_features An array of the name of the features corresponding to the values of the components:
+    :param name_of_components: Array of component names, will be displayed as part of the legend.
+    :param kwargs: extra parameters for the set_xticklabels method.
+    :return: axis object.
+    """
+    ax=plt.subplot(111)
+    if name_of_components is None:
+        name_of_components=['component'+str(i) for i in range(1,len(components+1))]
+    if len(components.shape)==1:
+        components=components.reshape((1,-1))
+    for component,name in zip(components,name_of_components):
+        absoulte_component=np.absolute(component)
+        ax.scatter(range(len(name_of_features)),absoulte_component,label=name)
+        ax.set_xticks(range(len(name_of_features)))
+        ax.set_xticklabels(name_of_features,**kwargs)
+        ax.legend()
+        plt.tight_layout()
 
+    return ax
 
 
 
