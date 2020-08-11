@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import torch
+from sklearn.metrics import accuracy_score, confusion_matrix
+from Plot.plot_confusion_mat import print_confusion_matrix
 import Projects.Crohn_project.Constants as Constants
 from Code import Data_loader as DL
 import Code.Plot as Plot
@@ -15,7 +18,8 @@ from LearningMethods.general_functions import train_test_split
 import seaborn as sns
 import pickle
 from LearningMethods.multi_model_learning import MultiModel
-
+import Code.Clustering as Clustering
+from torch.utils.data import TensorDataset,DataLoader
 # In this script we will use paths that are relative to the main script absolute path.
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,17 +58,101 @@ bacteria = list(bacteria)
 target_feature = input('\n What feature you would like to use as a target\n')
 # ------------------------------------------------------------------------------------------------------------------------
 if target_feature == 'Group2':
-    mapping_table.rename({target_feature: 'Tag'}, axis=1, inplace=True)
-    mapping_table = mapping_table.assign(
-        Tag=mapping_table['Tag'].transform(lambda status: Constants.active_dict.get(status, 0)))
-    dec_data, target_df = preprocess_grid.adjust_table_to_target(dec_data, mapping_table, right_on='SampleID',
+    mapping_table_with_modified_target_name=mapping_table.rename({target_feature: 'Tag'}, axis=1)
+    mapping_table_with_binary_target = mapping_table_with_modified_target_name.assign(Tag=mapping_table_with_modified_target_name['Tag'].transform(lambda status: Constants.active_dict.get(status, 0)))
+    dec_data_adusted_to_target, target_df = preprocess_grid.adjust_table_to_target(dec_data, mapping_table_with_binary_target, right_on='SampleID',
                                                                  left_index=True, remove_nan=True)
-    train_idx_list, test_idx_list = train_test_split(dec_data, target_df['Tag'], target_df['patient_No'],
+
+    tensor_data = torch.from_numpy(dec_data_adusted_to_target.to_numpy()).type(torch.FloatTensor)
+    tensor_target = torch.from_numpy(target_df['Tag'].to_numpy()).type(torch.LongTensor)
+
+
+    flared_learning_model=Clustering.learning_model(Constants.nn_structure,Constants.output_layer_size)
+    loss_fn=torch.nn.CrossEntropyLoss()
+    optimizer=torch.optim.Adam(flared_learning_model.parameters(), lr=Constants.lr)
+    train_step=Clustering.make_train_step(flared_learning_model,loss_fn,optimizer)
+
+
+
+
+    train_idx_list, test_idx_list = train_test_split(dec_data_adusted_to_target, target_df['Tag'], target_df['patient_No'],return_itr=False,
                                                      random_state=1)
-    learning_method_parameters = Constants.learning_method_parameters
-    learning_method_parameters['Bacteria'] = bacteria
-    learning_method_parameters['PCA'] = pca_obj
-    mm = MultiModel(learning_method_parameters)
-    mm.fit(dec_data, target_df['Tag'], train_idx_list, test_idx_list, train_idx_list, test_idx_list)
+
+
+
+    for current_train_idx,current_test_idx in zip(train_idx_list,test_idx_list):
+        x_train_tensor = tensor_data[current_train_idx]
+        y_train_tensor = tensor_target[current_train_idx]
+        x_test_tensor = tensor_data[current_test_idx]
+        y_test_tensor = tensor_target[current_test_idx]
+
+        train_data_set = TensorDataset(x_train_tensor, y_train_tensor)
+        test_data_set = TensorDataset(x_test_tensor, y_test_tensor)
+
+        train_loader = DataLoader(dataset=train_data_set, batch_size=Constants.train_batch_size,shuffle=True)
+        test_loader = DataLoader(dataset=test_data_set, batch_size=Constants.test_batch_size,shuffle=True)
+        train_average_loss=[]
+        test_average_loss=[]
+
+        for epoch in range(Constants.epochs):
+            """Train the model on the training set"""
+            for x_train_batch, y_train_batch in train_loader:
+                train_step(x_train_batch, y_train_batch)
+            """Evaluate the model after it finished the epoch"""
+            sum_loss=0
+            with torch.no_grad():
+                flared_learning_model.eval()
+                predictions_on_train=[]
+                real_y_train=[]
+                for x_train_batch, y_train_batch in train_loader:
+                    yhat = flared_learning_model(x_train_batch)
+                    sum_loss += loss_fn(yhat, y_train_batch).item()
+                    real_y_train.extend(y_train_batch)
+                    predictions_on_train.extend(flared_learning_model.predict(yhat))
+
+                train_average_loss.append(sum_loss/len(train_loader.dataset))
+                sum_loss=0
+                predictions_on_test = []
+                real_y_test = []
+
+                for x_test_batch, y_test_batch in test_loader:
+                    yhat = flared_learning_model(x_test_batch)
+                    sum_loss+=loss_fn(yhat,y_test_batch).item()
+                    real_y_test.extend(y_test_batch)
+                    predictions_on_test.extend(flared_learning_model.predict(yhat))
+
+                test_average_loss.append(sum_loss/len(test_loader.dataset))
+
+        """Loss visualization through different epochs"""
+        fig,axes=plt.subplots(1,3)
+        axes[0].plot(range(1,Constants.epochs+1),train_average_loss,label='Train_loss')
+        axes[0].plot(range(1,Constants.epochs+1),test_average_loss,label='Test_loss')
+        axes[0].set_xlabel('Epochs')
+        axes[0].set_ylabel('Average loss')
+        axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=Constants.epochs))
+
+        """Confusion matrix"""
+        axes[0].legend()
+        cm_train = confusion_matrix(real_y_train, predictions_on_train)
+        cm_test = confusion_matrix(real_y_test, predictions_on_test)
+        sns.heatmap(cm_train,annot=True,ax=axes[1],cmap="Blues",cbar=False,fmt="d")
+        sns.heatmap(cm_test,annot=True,ax=axes[2],cmap="Blues",cbar=False,fmt="d")
+        axes[1].set_ylabel('True label')
+        axes[1].set_xlabel('Predicted label')
+        axes[1].set_title('Train confusion matrix')
+        axes[2].set_ylabel('True label')
+        axes[2].set_xlabel('Predicted label')
+        axes[2].set_title('Test confusion matrix')
+
+        plt.tight_layout()
+        plt.show()
+        plt.close()
+        "Rest the model towards the next division of the data "
+        flared_learning_model.apply(Clustering.weight_reset)
+
+
+
+
+
 else:
     raise Exception('The target feature {target} is not supported'.format(target=target_feature))

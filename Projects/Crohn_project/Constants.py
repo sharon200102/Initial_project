@@ -12,61 +12,11 @@ active_dict={'active':1}
 dec_data_path_to_save=Path('exports_for_learning_methods/dec_data.csv')
 pca_obj_path_to_save=Path('exports_for_learning_methods/pca_obj.pkl')
 mapping_file_with_tag_path_to_save=Path('exports_for_learning_methods/mapping_file_with_tag.csv')
-tax = str(6)
-k_fold = 5
-test_size = 0.2
-names = ["Not Active", "Active"]
-results_folder='results'
-learning_method_parameters = {"TASK_TITLE": "Crohn_active_prediciton",  # the name of the task for plots titles...
-            "FOLDER_TITLE": 'results',  # creates the folder for the task we want to do, save results in it
-            "TAX_LEVEL": tax,
-            "CLASSES_NAMES": names,
-            "SVM": False,
-            "SVM_params": {'kernel': ['linear','poly','sigmoid'],
-                           'gamma': ['auto', 'scale'],
-                           'C': [0.01*5**i for i in range(0,11)],
-                           "create_coeff_plots": False,
-                           "CLASSES_NAMES": names,
-                           "K_FOLD": k_fold,
-                           "TEST_SIZE": test_size,
-                           "TASK_TITLE": "Active_prediction"
-                           },
-            # if single option for each param -> single run, otherwise -> grid search.
-            "XGB": False,
-            "XGB_params": {'learning_rate': [0.3,0.4,0.5],
-                           'objective': ['binary:logistic'],
-                           'n_estimators': [500,1000],
-                           'max_depth': [6,7,8],
-                           'min_child_weight': [1,2,3,4],
-                           'gamma': [0.001,0.01,0.1],
-                           "create_coeff_plots": False,
-                           "CLASSES_NAMES": names,
-                           "K_FOLD": k_fold,
-                           "TEST_SIZE": test_size,
-                           "TASK_TITLE": "Active_prediction"
-                           },  # if single option for each param -> single run, otherwise -> grid search.
-            "NN": True,
-            "NN_params": {
-                        "hid_dim_0": 5,
-                        "hid_dim_1": 5,
-                        "reg": 0.32,
-                        "lr": 0.01,
-                        "test_size": 0.2,
-                        "batch_size": 16,
-                        "shuffle": 1,
-                        "num_workers": 0,
-                        "epochs": 20,
-                        "optimizer": 'Adam',
-                        "loss": 'MSE',
-                        "model": 'tanh_b'
-            },  # if single option for each param -> single run, otherwise -> grid search.
-            "NNI": False,
-            "NNI_params": {
-                        "result_type": 'auc'
-            },
-            # enter to model params?  might want to change for different models..
-            "K_FOLD": k_fold,
-            "TEST_SIZE": test_size,
-            "Folder":"models_results"
-            #  ...... add whatever
-            }
+hidden_size=5
+nn_structure=[15,hidden_size]
+output_layer_size=2
+lr=0.01
+train_batch_size=16
+test_batch_size=16
+epochs=40
+active_classes_names=['Not Active','Active']
