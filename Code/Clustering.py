@@ -54,17 +54,23 @@ class learning_model(nn.Module):
     output=self.out(input)
     return output
 
-  def predict(self, x):
+  def predict(self, x, threshold=0.5):
     # Apply softmax to output.
+    is_binary=self.out==2
     pred = F.softmax(x)
     ans = []
     # Pick the class with maximum weight
     for t in pred:
-      if t[0] > t[1]:
-        ans.append(0)
+      if is_binary:
+        if t[1] > threshold:
+          ans.append(1)
+        else:
+          ans.append(0)
       else:
-        ans.append(1)
+        ans.append(t.argmax())
     return ans
+  def predict_prob(self,input):
+    return F.softmax(self(input))
 
 def make_train_step(model, loss_fn, optimizer):
   # Builds function that performs a step in the train loop

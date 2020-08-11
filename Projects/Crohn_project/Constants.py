@@ -18,5 +18,5 @@ output_layer_size=2
 lr=0.01
 train_batch_size=16
 test_batch_size=16
-epochs=40
+epochs=10
 active_classes_names=['Not Active','Active']

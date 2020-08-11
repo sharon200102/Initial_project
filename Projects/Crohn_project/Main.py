@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix,precision_recall_curve
 from Plot.plot_confusion_mat import print_confusion_matrix
 import Projects.Crohn_project.Constants as Constants
 from Code import Data_loader as DL
@@ -13,6 +13,7 @@ from biom import load_table
 from sklearn.model_selection import cross_validate
 from sklearn.svm import SVR
 from sklearn import linear_model
+
 import os
 from LearningMethods.general_functions import train_test_split
 import seaborn as sns
@@ -62,13 +63,16 @@ if target_feature == 'Group2':
     mapping_table_with_binary_target = mapping_table_with_modified_target_name.assign(Tag=mapping_table_with_modified_target_name['Tag'].transform(lambda status: Constants.active_dict.get(status, 0)))
     dec_data_adusted_to_target, target_df = preprocess_grid.adjust_table_to_target(dec_data, mapping_table_with_binary_target, right_on='SampleID',
                                                                  left_index=True, remove_nan=True)
-
+    target_unique_elements=sorted(list(target_df['Tag'].unique()))
+    quantity_of_target_unique_elements=[list(target_df['Tag']).count(i) for i in target_unique_elements]
+    normedWeights=[1/x for x in quantity_of_target_unique_elements]
+    normedWeights = torch.FloatTensor(normedWeights)
     tensor_data = torch.from_numpy(dec_data_adusted_to_target.to_numpy()).type(torch.FloatTensor)
     tensor_target = torch.from_numpy(target_df['Tag'].to_numpy()).type(torch.LongTensor)
 
 
     flared_learning_model=Clustering.learning_model(Constants.nn_structure,Constants.output_layer_size)
-    loss_fn=torch.nn.CrossEntropyLoss()
+    loss_fn=torch.nn.CrossEntropyLoss(weight=normedWeights,reduction='sum')
     optimizer=torch.optim.Adam(flared_learning_model.parameters(), lr=Constants.lr)
     train_step=Clustering.make_train_step(flared_learning_model,loss_fn,optimizer)
 
@@ -124,25 +128,37 @@ if target_feature == 'Group2':
                 test_average_loss.append(sum_loss/len(test_loader.dataset))
 
         """Loss visualization through different epochs"""
-        fig,axes=plt.subplots(1,3)
+        fig,axes=plt.subplots(1,4)
         axes[0].plot(range(1,Constants.epochs+1),train_average_loss,label='Train_loss')
         axes[0].plot(range(1,Constants.epochs+1),test_average_loss,label='Test_loss')
         axes[0].set_xlabel('Epochs')
         axes[0].set_ylabel('Average loss')
         axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=Constants.epochs))
-
-        """Confusion matrix"""
         axes[0].legend()
+
+
+        """precision-recall curve"""
+        probs_pred=flared_learning_model.predict_prob(x_train_tensor).detach().numpy()
+        active_probs=probs_pred[:,1]
+
+
+        precision, recall, threshold=precision_recall_curve(y_train_tensor, active_probs)
+        axes[1].plot(precision,recall)
+        axes[1].set_ylabel('Precision')
+        axes[1].set_xlabel('Recall')
+        axes[1].set_title('Precision-Recall curve')
+        """Confusion matrix"""
+
         cm_train = confusion_matrix(real_y_train, predictions_on_train)
         cm_test = confusion_matrix(real_y_test, predictions_on_test)
-        sns.heatmap(cm_train,annot=True,ax=axes[1],cmap="Blues",cbar=False,fmt="d")
-        sns.heatmap(cm_test,annot=True,ax=axes[2],cmap="Blues",cbar=False,fmt="d")
-        axes[1].set_ylabel('True label')
-        axes[1].set_xlabel('Predicted label')
-        axes[1].set_title('Train confusion matrix')
+        sns.heatmap(cm_train,annot=True,ax=axes[2],cmap="Blues",cbar=False,fmt="d")
+        sns.heatmap(cm_test,annot=True,ax=axes[3],cmap="Blues",cbar=False,fmt="d")
         axes[2].set_ylabel('True label')
         axes[2].set_xlabel('Predicted label')
-        axes[2].set_title('Test confusion matrix')
+        axes[2].set_title('Train confusion matrix')
+        axes[3].set_ylabel('True label')
+        axes[3].set_xlabel('Predicted label')
+        axes[3].set_title('Test confusion matrix')
 
         plt.tight_layout()
         plt.show()
