@@ -111,6 +111,7 @@ if target_feature == 'Group2':
 
         stop=False
         epoch=0
+        best_f1=0
         best_f1_list=[]
 
         while not stop:
@@ -128,8 +129,17 @@ if target_feature == 'Group2':
                 best_threshold,_ = Clustering.best_threshold(precision, recall, thresholds)
 
                 y_val_pred=flared_learning_model.predict(flared_learning_model(x_val_tensor), best_threshold)
-                best_f1_list.append(precision_recall_fscore_support(y_val_tensor, y_val_pred, average='binary')[2])
-                stop=Clustering.early_stopping(best_f1_list,patience=10)
+                f1_score=precision_recall_fscore_support(y_val_tensor, y_val_pred, average='binary')[2]
+                best_f1_list.append(f1_score)
+                if f1_score>best_f1:
+                    best_f1=f1_score
+                    torch.save({
+                        'model_state_dict': flared_learning_model.state_dict(),
+                        'precision':precision,
+                        'recall': recall,
+                        'best_threshold':best_threshold
+                    }, Constants.MODEL_PATH)
+                stop=Clustering.early_stopping(best_f1_list,patience=20)
 
         """Loss visualization through different epochs"""
         fig,axes=plt.subplots(1,4)
@@ -139,17 +149,23 @@ if target_feature == 'Group2':
         axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=epoch))
         axes[0].legend()
 
-
+        check_point=torch.load(Constants.MODEL_PATH)
+        recall=check_point['recall']
+        precision=check_point['precision']
         """precision-recall curve"""
         axes[1].plot(recall,precision)
         axes[1].set_ylabel('Precision')
         axes[1].set_xlabel('Recall')
         axes[1].set_title('Precision-Recall curve')
 
+        trained_model = Clustering.learning_model(Constants.nn_structure, Constants.output_layer_size)
+        trained_model.load_state_dict(check_point['model_state_dict'])
+        trained_model.eval()
+        best_threshold=check_point['best_threshold']
         """Confusion matrix"""
 
-        cm_train = confusion_matrix(y_train_and_val_tensor, flared_learning_model.predict(flared_learning_model(x_train_and_val_tensor),best_threshold))
-        cm_test = confusion_matrix(y_test_tensor, flared_learning_model.predict(flared_learning_model(x_test_tensor),best_threshold))
+        cm_train = confusion_matrix(y_train_and_val_tensor, trained_model.predict(trained_model(x_train_and_val_tensor),best_threshold))
+        cm_test = confusion_matrix(y_test_tensor, trained_model.predict(trained_model(x_test_tensor),best_threshold))
         sns.heatmap(cm_train,annot=True,ax=axes[2],cmap="Blues",cbar=False,fmt="d")
         sns.heatmap(cm_test,annot=True,ax=axes[3],cmap="Blues",cbar=False,fmt="d")
         axes[2].set_ylabel('True label')
