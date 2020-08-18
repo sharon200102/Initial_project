@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import accuracy_score, confusion_matrix,precision_recall_curve
+from sklearn.metrics import accuracy_score, confusion_matrix,precision_recall_curve,precision_recall_fscore_support
 from Plot.plot_confusion_mat import print_confusion_matrix
 import Projects.Crohn_project.Constants as Constants
 from Code import Data_loader as DL
@@ -63,14 +63,17 @@ if target_feature == 'Group2':
     mapping_table_with_binary_target = mapping_table_with_modified_target_name.assign(Tag=mapping_table_with_modified_target_name['Tag'].transform(lambda status: Constants.active_dict.get(status, 0)))
     dec_data_adusted_to_target, target_df = preprocess_grid.adjust_table_to_target(dec_data, mapping_table_with_binary_target, right_on='SampleID',
                                                                  left_index=True, remove_nan=True)
+    target_df.reset_index(drop=True,inplace=True)
+    """Calculate the weights for the loss function"""
     target_unique_elements=sorted(list(target_df['Tag'].unique()))
     quantity_of_target_unique_elements=[list(target_df['Tag']).count(i) for i in target_unique_elements]
     normedWeights=[1/x for x in quantity_of_target_unique_elements]
     normedWeights = torch.FloatTensor(normedWeights)
+
     tensor_data = torch.from_numpy(dec_data_adusted_to_target.to_numpy()).type(torch.FloatTensor)
     tensor_target = torch.from_numpy(target_df['Tag'].to_numpy()).type(torch.LongTensor)
 
-
+    """Create the model and all the surroundings"""
     flared_learning_model=Clustering.learning_model(Constants.nn_structure,Constants.output_layer_size)
     loss_fn=torch.nn.CrossEntropyLoss(weight=normedWeights,reduction='sum')
     optimizer=torch.optim.Adam(flared_learning_model.parameters(), lr=Constants.lr)
@@ -84,73 +87,69 @@ if target_feature == 'Group2':
 
 
 
-    for current_train_idx,current_test_idx in zip(train_idx_list,test_idx_list):
-        x_train_tensor = tensor_data[current_train_idx]
-        y_train_tensor = tensor_target[current_train_idx]
+    for current_train_and_val_idx, current_test_idx in zip(train_idx_list, test_idx_list):
+        """Split to train-validation and test"""
+        x_train_and_val_tensor = tensor_data[current_train_and_val_idx]
+        y_train_and_val_tensor = tensor_target[current_train_and_val_idx]
+
+        """Split train-validation to train, validation"""
+        train_idx,val_idx=train_test_split(x_train_and_val_tensor,y_train_and_val_tensor,target_df['patient_No'].iloc[current_train_and_val_idx],n_splits=1)
+        x_train_tensor,y_train_tensor=tensor_data[train_idx],tensor_target[train_idx]
+        x_val_tensor,y_val_tensor=tensor_data[val_idx],tensor_target[val_idx]
+
+        """Test set"""
         x_test_tensor = tensor_data[current_test_idx]
         y_test_tensor = tensor_target[current_test_idx]
 
-        train_data_set = TensorDataset(x_train_tensor, y_train_tensor)
+        train_and_val_data_set = TensorDataset(x_train_and_val_tensor, y_train_and_val_tensor)
+        val_data_set=TensorDataset(x_val_tensor, y_val_tensor)
         test_data_set = TensorDataset(x_test_tensor, y_test_tensor)
 
-        train_loader = DataLoader(dataset=train_data_set, batch_size=Constants.train_batch_size,shuffle=True)
+        train_and_val_loader = DataLoader(dataset=train_and_val_data_set, batch_size=Constants.train_batch_size, shuffle=True)
+        val_loader = DataLoader(dataset=val_data_set, batch_size=Constants.val_batch_size,shuffle=True)
         test_loader = DataLoader(dataset=test_data_set, batch_size=Constants.test_batch_size,shuffle=True)
-        train_average_loss=[]
-        test_average_loss=[]
 
-        for epoch in range(Constants.epochs):
+        stop=False
+        epoch=0
+        best_f1_list=[]
+
+        while not stop:
+            epoch+=1
+            print("\nTraining epoch number {epoch}\n".format(epoch=epoch))
             """Train the model on the training set"""
-            for x_train_batch, y_train_batch in train_loader:
-                train_step(x_train_batch, y_train_batch)
+            for x_train_and_val_batch, y_train_and_val_batch in train_and_val_loader:
+                train_step(x_train_and_val_batch, y_train_and_val_batch)
             """Evaluate the model after it finished the epoch"""
-            sum_loss=0
             with torch.no_grad():
                 flared_learning_model.eval()
-                predictions_on_train=[]
-                real_y_train=[]
-                for x_train_batch, y_train_batch in train_loader:
-                    yhat = flared_learning_model(x_train_batch)
-                    sum_loss += loss_fn(yhat, y_train_batch).item()
-                    real_y_train.extend(y_train_batch)
-                    predictions_on_train.extend(flared_learning_model.predict(yhat))
+                probs_pred = flared_learning_model.predict_prob(x_train_and_val_tensor).detach().numpy()
+                active_probs = probs_pred[:, 1]
+                precision, recall, thresholds = precision_recall_curve(y_train_and_val_tensor, active_probs)
+                best_threshold,_ = Clustering.best_threshold(precision, recall, thresholds)
 
-                train_average_loss.append(sum_loss/len(train_loader.dataset))
-                sum_loss=0
-                predictions_on_test = []
-                real_y_test = []
-
-                for x_test_batch, y_test_batch in test_loader:
-                    yhat = flared_learning_model(x_test_batch)
-                    sum_loss+=loss_fn(yhat,y_test_batch).item()
-                    real_y_test.extend(y_test_batch)
-                    predictions_on_test.extend(flared_learning_model.predict(yhat))
-
-                test_average_loss.append(sum_loss/len(test_loader.dataset))
+                y_val_pred=flared_learning_model.predict(flared_learning_model(x_val_tensor), best_threshold)
+                best_f1_list.append(precision_recall_fscore_support(y_val_tensor, y_val_pred, average='binary')[2])
+                stop=Clustering.early_stopping(best_f1_list,patience=10)
 
         """Loss visualization through different epochs"""
         fig,axes=plt.subplots(1,4)
-        axes[0].plot(range(1,Constants.epochs+1),train_average_loss,label='Train_loss')
-        axes[0].plot(range(1,Constants.epochs+1),test_average_loss,label='Test_loss')
+        axes[0].plot(range(1,epoch+1),best_f1_list,label='Validation_f1',ls='--')
         axes[0].set_xlabel('Epochs')
-        axes[0].set_ylabel('Average loss')
-        axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=Constants.epochs))
+        axes[0].set_ylabel('F1')
+        axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=epoch))
         axes[0].legend()
 
 
         """precision-recall curve"""
-        probs_pred=flared_learning_model.predict_prob(x_train_tensor).detach().numpy()
-        active_probs=probs_pred[:,1]
-
-
-        precision, recall, threshold=precision_recall_curve(y_train_tensor, active_probs)
-        axes[1].plot(precision,recall)
+        axes[1].plot(recall,precision)
         axes[1].set_ylabel('Precision')
         axes[1].set_xlabel('Recall')
         axes[1].set_title('Precision-Recall curve')
+
         """Confusion matrix"""
 
-        cm_train = confusion_matrix(real_y_train, predictions_on_train)
-        cm_test = confusion_matrix(real_y_test, predictions_on_test)
+        cm_train = confusion_matrix(y_train_and_val_tensor, flared_learning_model.predict(flared_learning_model(x_train_and_val_tensor),best_threshold))
+        cm_test = confusion_matrix(y_test_tensor, flared_learning_model.predict(flared_learning_model(x_test_tensor),best_threshold))
         sns.heatmap(cm_train,annot=True,ax=axes[2],cmap="Blues",cbar=False,fmt="d")
         sns.heatmap(cm_test,annot=True,ax=axes[3],cmap="Blues",cbar=False,fmt="d")
         axes[2].set_ylabel('True label')

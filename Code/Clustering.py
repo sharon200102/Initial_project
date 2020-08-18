@@ -56,13 +56,13 @@ class learning_model(nn.Module):
 
   def predict(self, x, threshold=0.5):
     # Apply softmax to output.
-    is_binary=self.out==2
+    is_binary=self.out.out_features==2
     pred = F.softmax(x)
     ans = []
     # Pick the class with maximum weight
     for t in pred:
       if is_binary:
-        if t[1] > threshold:
+        if t[1] >= threshold:
           ans.append(1)
         else:
           ans.append(0)
@@ -95,3 +95,27 @@ def make_train_step(model, loss_fn, optimizer):
 def weight_reset(m):
   if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
     m.reset_parameters()
+def calculate_f1_score(precision,recall):
+  return 2 * (precision * recall) / (precision + recall)
+def best_threshold(precision_arr, recall_arr, thresholds_arr, index_function=None, maximize=True):
+  if index_function is None:
+    index_function=calculate_f1_score
+  index_values=[index_function(precision,recall) for precision,recall in zip(precision_arr,recall_arr)]
+  if maximize:
+    best_value=max(index_values)
+  else:
+    best_value = min(index_values)
+  return thresholds_arr[index_values.index(best_value)],best_value
+
+def early_stopping(history,patience=2,ascending=True):
+  if len(history)<=patience:
+    return False
+  if ascending:
+    return history[-patience-1]==max(history[-patience-1:])
+  else:
+    return history[-patience-1]==min(history[-patience-1:])
+
+
+
+
+
