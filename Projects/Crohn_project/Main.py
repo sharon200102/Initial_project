@@ -23,7 +23,6 @@ import Code.Clustering as Clustering
 from torch.utils.data import TensorDataset,DataLoader
 # In this script we will use paths that are relative to the main script absolute path.
 script_dir = os.path.dirname(os.path.abspath(__file__))
-
 # First load the the data including the biom type file
 biom_table = load_table(os.path.join(script_dir, Constants.biom_file_path))
 mapping_table = DL.files_read_csv_fails_to_data_frame(os.path.join(script_dir, Constants.mapping_file_path), 1)
@@ -138,25 +137,25 @@ if target_feature == 'Group2':
                         'precision':precision,
                         'recall': recall,
                         'best_threshold':best_threshold
-                    }, Constants.MODEL_PATH)
+                    },os.path.join(script_dir,Constants.MODEL_PATH))
                 stop=Clustering.early_stopping(best_f1_list,patience=20)
 
         """Loss visualization through different epochs"""
         fig,axes=plt.subplots(1,4)
         axes[0].plot(range(1,epoch+1),best_f1_list,label='Validation_f1',ls='--')
         axes[0].set_xlabel('Epochs')
-        axes[0].set_ylabel('F1')
+        axes[0].set_ylabel('Validation F1')
         axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=epoch))
         axes[0].legend()
 
-        check_point=torch.load(Constants.MODEL_PATH)
+        check_point=torch.load(os.path.join(script_dir,Constants.MODEL_PATH))
         recall=check_point['recall']
         precision=check_point['precision']
         """precision-recall curve"""
         axes[1].plot(recall,precision)
         axes[1].set_ylabel('Precision')
         axes[1].set_xlabel('Recall')
-        axes[1].set_title('Precision-Recall curve')
+        axes[1].set_title('Precision-Recall curve on train and validation')
 
         trained_model = Clustering.learning_model(Constants.nn_structure, Constants.output_layer_size)
         trained_model.load_state_dict(check_point['model_state_dict'])
