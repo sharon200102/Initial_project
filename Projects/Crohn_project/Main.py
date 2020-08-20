@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import accuracy_score, confusion_matrix,precision_recall_curve,precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_curve, precision_recall_fscore_support, \
+    roc_curve, roc_auc_score
 from Plot.plot_confusion_mat import print_confusion_matrix
 import Projects.Crohn_project.Constants as Constants
 from Code import Data_loader as DL
@@ -141,7 +142,7 @@ if target_feature == 'Group2':
                 stop=Clustering.early_stopping(best_f1_list,patience=20)
 
         """Loss visualization through different epochs"""
-        fig,axes=plt.subplots(1,4)
+        fig,axes=plt.subplots(1,5)
         axes[0].plot(range(1,epoch+1),best_f1_list,label='Validation_f1',ls='--')
         axes[0].set_xlabel('Epochs')
         axes[0].set_ylabel('Validation F1')
@@ -161,20 +162,31 @@ if target_feature == 'Group2':
         trained_model.load_state_dict(check_point['model_state_dict'])
         trained_model.eval()
         best_threshold=check_point['best_threshold']
+
+        """ROC-AUC curve"""
+        probs_pred = flared_learning_model.predict_prob(x_test_tensor).detach().numpy()
+        active_probs = probs_pred[:, 1]
+        fpr, tpr, thresholds = roc_curve(y_test_tensor,active_probs)
+        auc=roc_auc_score(y_test_tensor, active_probs)
+        axes[2].plot(fpr,tpr,marker='.',label='Auc={:.3f}'.format(auc))
+        axes[2].set_title('ROC-curve')
+        axes[2].set_xlabel('False Positive Rate')
+        axes[2].set_ylabel('True Positive Rate')
+        axes[2].legend()
         """Confusion matrix"""
 
         cm_train = confusion_matrix(y_train_and_val_tensor, trained_model.predict(trained_model(x_train_and_val_tensor),best_threshold))
         cm_test = confusion_matrix(y_test_tensor, trained_model.predict(trained_model(x_test_tensor),best_threshold))
-        sns.heatmap(cm_train,annot=True,ax=axes[2],cmap="Blues",cbar=False,fmt="d")
-        sns.heatmap(cm_test,annot=True,ax=axes[3],cmap="Blues",cbar=False,fmt="d")
-        axes[2].set_ylabel('True label')
-        axes[2].set_xlabel('Predicted label')
-        axes[2].set_title('Train confusion matrix')
+        sns.heatmap(cm_train,annot=True,ax=axes[3],cmap="Blues",cbar=False,fmt="d")
+        sns.heatmap(cm_test,annot=True,ax=axes[4],cmap="Blues",cbar=False,fmt="d")
         axes[3].set_ylabel('True label')
         axes[3].set_xlabel('Predicted label')
-        axes[3].set_title('Test confusion matrix')
+        axes[3].set_title('Train confusion matrix')
+        axes[4].set_ylabel('True label')
+        axes[4].set_xlabel('Predicted label')
+        axes[4].set_title('Test confusion matrix')
 
-        plt.tight_layout()
+        fig.tight_layout()
         plt.show()
         plt.close()
         "Rest the model towards the next division of the data "
