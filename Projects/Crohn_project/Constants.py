@@ -9,6 +9,8 @@ path_of_correlation_between_numeric_features_and_target=Path('Graphs/Correlation
 numerical_features_names=['CRP_n','Cal_n','CDAI_n','highest_lewis_score','HGB']
 categorical_features_names=['family_background_of_crohns','smoking_binary','Group']
 active_dict={'active':1}
+control_dict={'Control':1}
+
 dec_data_path_to_save=Path('exports_for_learning_methods/dec_data.csv')
 pca_obj_path_to_save=Path('exports_for_learning_methods/pca_obj.pkl')
 mapping_file_with_tag_path_to_save=Path('exports_for_learning_methods/mapping_file_with_tag.csv')

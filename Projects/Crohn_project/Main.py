@@ -65,10 +65,7 @@ if target_feature == 'Group2':
                                                                  left_index=True, remove_nan=True)
     target_df.reset_index(drop=True,inplace=True)
     """Calculate the weights for the loss function"""
-    target_unique_elements=sorted(list(target_df['Tag'].unique()))
-    quantity_of_target_unique_elements=[list(target_df['Tag']).count(i) for i in target_unique_elements]
-    normedWeights=[1/x for x in quantity_of_target_unique_elements]
-    normedWeights = torch.FloatTensor(normedWeights)
+    normedWeights=Clustering.get_weights_out_of_target(target_df['Tag'])
 
     tensor_data = torch.from_numpy(dec_data_adusted_to_target.to_numpy()).type(torch.FloatTensor)
     tensor_target = torch.from_numpy(target_df['Tag'].to_numpy()).type(torch.LongTensor)
@@ -84,9 +81,7 @@ if target_feature == 'Group2':
 
     train_idx_list, test_idx_list = train_test_split(dec_data_adusted_to_target, target_df['Tag'], target_df['patient_No'],return_itr=False,
                                                      random_state=1)
-
-
-
+    auc_list=[]
     for current_train_and_val_idx, current_test_idx in zip(train_idx_list, test_idx_list):
         """Split to train-validation and test"""
         x_train_and_val_tensor = tensor_data[current_train_and_val_idx]
@@ -112,7 +107,7 @@ if target_feature == 'Group2':
         stop=False
         epoch=0
         best_f1=0
-        best_f1_list=[]
+        val_f1_list=[]
 
         while not stop:
             epoch+=1
@@ -130,7 +125,7 @@ if target_feature == 'Group2':
 
                 y_val_pred=flared_learning_model.predict(flared_learning_model(x_val_tensor), best_threshold)
                 f1_score=precision_recall_fscore_support(y_val_tensor, y_val_pred, average='binary')[2]
-                best_f1_list.append(f1_score)
+                val_f1_list.append(f1_score)
                 if f1_score>best_f1:
                     best_f1=f1_score
                     torch.save({
@@ -139,11 +134,11 @@ if target_feature == 'Group2':
                         'recall': recall,
                         'best_threshold':best_threshold
                     },os.path.join(script_dir,Constants.MODEL_PATH))
-                stop=Clustering.early_stopping(best_f1_list,patience=20)
+                stop=Clustering.early_stopping(val_f1_list, patience=20)
 
         """Loss visualization through different epochs"""
         fig,axes=plt.subplots(1,5)
-        axes[0].plot(range(1,epoch+1),best_f1_list,label='Validation_f1',ls='--')
+        axes[0].plot(range(1,epoch+1), val_f1_list, label='Validation_f1', ls='--')
         axes[0].set_xlabel('Epochs')
         axes[0].set_ylabel('Validation F1')
         axes[0].set_title('Active cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,lr=Constants.lr,ep=epoch))
@@ -164,10 +159,10 @@ if target_feature == 'Group2':
         best_threshold=check_point['best_threshold']
 
         """ROC-AUC curve"""
-        probs_pred = flared_learning_model.predict_prob(x_test_tensor).detach().numpy()
+        probs_pred = flared_learning_model.predict_prob(x_train_and_val_tensor).detach().numpy()
         active_probs = probs_pred[:, 1]
-        fpr, tpr, thresholds = roc_curve(y_test_tensor,active_probs)
-        auc=roc_auc_score(y_test_tensor, active_probs)
+        fpr, tpr, thresholds = roc_curve(y_train_and_val_tensor,active_probs)
+        auc=roc_auc_score(y_train_and_val_tensor, active_probs)
         axes[2].plot(fpr,tpr,marker='.',label='Auc={:.3f}'.format(auc))
         axes[2].set_title('ROC-curve')
         axes[2].set_xlabel('False Positive Rate')
@@ -189,9 +184,150 @@ if target_feature == 'Group2':
         fig.tight_layout()
         plt.show()
         plt.close()
+
+        """save the Auc score for cross validation """
+        auc_list.append(auc)
         "Rest the model towards the next division of the data "
         flared_learning_model.apply(Clustering.weight_reset)
+    print(sum(auc_list)/len(auc_list))
 
+elif target_feature == 'Group':
+    """transform target to binary"""
+    mapping_table_with_modified_target_name = mapping_table.rename({target_feature: 'Tag'}, axis=1)
+    mapping_table_with_binary_target = mapping_table_with_modified_target_name.assign(Tag=mapping_table_with_modified_target_name['Tag'].transform(lambda status: Constants.control_dict.get(status, 0)))
+    dec_data_adusted_to_target, target_df = preprocess_grid.adjust_table_to_target(dec_data,mapping_table_with_binary_target,right_on='SampleID',left_index=True, remove_nan=True)
+    target_df.reset_index(drop=True, inplace=True)
+
+    """Calculate the weights for the loss function"""
+    normedWeights = Clustering.get_weights_out_of_target(target_df['Tag'])
+    """transfor data to tensor"""
+    tensor_data = torch.from_numpy(dec_data_adusted_to_target.to_numpy()).type(torch.FloatTensor)
+    tensor_target = torch.from_numpy(target_df['Tag'].to_numpy()).type(torch.LongTensor)
+    """Create the model and all the surroundings"""
+    flared_learning_model = Clustering.learning_model(Constants.nn_structure, Constants.output_layer_size)
+    loss_fn = torch.nn.CrossEntropyLoss(weight=normedWeights, reduction='sum')
+    optimizer = torch.optim.Adam(flared_learning_model.parameters(), lr=Constants.lr)
+    train_step = Clustering.make_train_step(flared_learning_model, loss_fn, optimizer)
+    """split to train and test"""
+    train_idx_list, test_idx_list = train_test_split(dec_data_adusted_to_target, target_df['Tag'],
+                                                     target_df['patient_No'], return_itr=False,
+                                                     random_state=1)
+    auc_list = []
+    for current_train_and_val_idx, current_test_idx in zip(train_idx_list, test_idx_list):
+        """Split to train-validation and test"""
+        x_train_and_val_tensor = tensor_data[current_train_and_val_idx]
+        y_train_and_val_tensor = tensor_target[current_train_and_val_idx]
+
+        """Split train-validation to train, validation"""
+        train_idx, val_idx = train_test_split(x_train_and_val_tensor, y_train_and_val_tensor,
+                                              target_df['patient_No'].iloc[current_train_and_val_idx], n_splits=1)
+        x_train_tensor, y_train_tensor = tensor_data[train_idx], tensor_target[train_idx]
+        x_val_tensor, y_val_tensor = tensor_data[val_idx], tensor_target[val_idx]
+
+        """Test set"""
+        x_test_tensor = tensor_data[current_test_idx]
+        y_test_tensor = tensor_target[current_test_idx]
+
+        """Create corresponding data-sets"""
+        train_and_val_data_set = TensorDataset(x_train_and_val_tensor, y_train_and_val_tensor)
+        val_data_set = TensorDataset(x_val_tensor, y_val_tensor)
+        test_data_set = TensorDataset(x_test_tensor, y_test_tensor)
+        """Create corresponding data-loaders"""
+
+        train_and_val_loader = DataLoader(dataset=train_and_val_data_set, batch_size=Constants.train_batch_size,
+                                          shuffle=True)
+        val_loader = DataLoader(dataset=val_data_set, batch_size=Constants.val_batch_size, shuffle=True)
+        test_loader = DataLoader(dataset=test_data_set, batch_size=Constants.test_batch_size, shuffle=True)
+
+        stop = False
+        epoch = 0
+        best_f1 = 0
+        val_f1_list = []
+
+        while not stop:
+            epoch += 1
+            print("\nTraining epoch number {epoch}\n".format(epoch=epoch))
+            """Train the model on the training set"""
+            for x_train_and_val_batch, y_train_and_val_batch in train_and_val_loader:
+                train_step(x_train_and_val_batch, y_train_and_val_batch)
+            """Evaluate the model after it finished the epoch"""
+            with torch.no_grad():
+                flared_learning_model.eval()
+                probs_pred = flared_learning_model.predict_prob(x_train_and_val_tensor).detach().numpy()
+                active_probs = probs_pred[:, 1]
+                precision, recall, thresholds = precision_recall_curve(y_train_and_val_tensor, active_probs)
+                best_threshold, _ = Clustering.best_threshold(precision, recall, thresholds)
+
+                y_val_pred = flared_learning_model.predict(flared_learning_model(x_val_tensor), best_threshold)
+                f1_score = precision_recall_fscore_support(y_val_tensor, y_val_pred, average='binary')[2]
+                val_f1_list.append(f1_score)
+                if f1_score > best_f1:
+                    best_f1 = f1_score
+                    torch.save({
+                        'model_state_dict': flared_learning_model.state_dict(),
+                        'precision': precision,
+                        'recall': recall,
+                        'best_threshold': best_threshold
+                    }, os.path.join(script_dir, Constants.MODEL_PATH))
+                stop = Clustering.early_stopping(val_f1_list, patience=20)
+
+        """Loss visualization through different epochs"""
+        fig, axes = plt.subplots(1, 5)
+        axes[0].plot(range(1, epoch + 1), val_f1_list, label='Validation_f1', ls='--')
+        axes[0].set_xlabel('Epochs')
+        axes[0].set_ylabel('Validation F1')
+        axes[0].set_title(
+            'Control cases prediction,\n Hidden={hidden}\n Lr={lr}\n Epochs={ep}'.format(hidden=Constants.hidden_size,
+                                                                                        lr=Constants.lr, ep=epoch))
+        axes[0].legend()
+
+        check_point = torch.load(os.path.join(script_dir, Constants.MODEL_PATH))
+        recall = check_point['recall']
+        precision = check_point['precision']
+        """precision-recall curve"""
+        axes[1].plot(recall, precision)
+        axes[1].set_ylabel('Precision')
+        axes[1].set_xlabel('Recall')
+        axes[1].set_title('Precision-Recall curve on train and validation')
+
+        trained_model = Clustering.learning_model(Constants.nn_structure, Constants.output_layer_size)
+        trained_model.load_state_dict(check_point['model_state_dict'])
+        trained_model.eval()
+        best_threshold = check_point['best_threshold']
+
+        """ROC-AUC curve"""
+        probs_pred = flared_learning_model.predict_prob(x_train_and_val_tensor).detach().numpy()
+        active_probs = probs_pred[:, 1]
+        fpr, tpr, thresholds = roc_curve(y_train_and_val_tensor, active_probs)
+        auc = roc_auc_score(y_train_and_val_tensor, active_probs)
+        axes[2].plot(fpr, tpr, marker='.', label='Auc={:.3f}'.format(auc))
+        axes[2].set_title('ROC-curve')
+        axes[2].set_xlabel('False Positive Rate')
+        axes[2].set_ylabel('True Positive Rate')
+        axes[2].legend()
+        """Confusion matrix"""
+
+        cm_train = confusion_matrix(y_train_and_val_tensor,
+                                    trained_model.predict(trained_model(x_train_and_val_tensor), best_threshold))
+        cm_test = confusion_matrix(y_test_tensor, trained_model.predict(trained_model(x_test_tensor), best_threshold))
+        sns.heatmap(cm_train, annot=True, ax=axes[3], cmap="Blues", cbar=False, fmt="d")
+        sns.heatmap(cm_test, annot=True, ax=axes[4], cmap="Blues", cbar=False, fmt="d")
+        axes[3].set_ylabel('True label')
+        axes[3].set_xlabel('Predicted label')
+        axes[3].set_title('Train confusion matrix')
+        axes[4].set_ylabel('True label')
+        axes[4].set_xlabel('Predicted label')
+        axes[4].set_title('Test confusion matrix')
+
+        fig.tight_layout()
+        plt.show()
+        plt.close()
+
+        """save the Auc score for cross validation """
+        auc_list.append(auc)
+        "Rest the model towards the next division of the data "
+        flared_learning_model.apply(Clustering.weight_reset)
+    print(sum(auc_list) / len(auc_list))
 
 
 

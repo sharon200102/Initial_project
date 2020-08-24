@@ -114,7 +114,14 @@ def early_stopping(history,patience=2,ascending=True):
     return history[-patience-1]==max(history[-patience-1:])
   else:
     return history[-patience-1]==min(history[-patience-1:])
-
+def get_weights_out_of_target(target_series,weights_fn=None):
+  if weights_fn is None:
+    weights_fn=lambda input:1/input
+  target_unique_elements = sorted(list(target_series.unique()))
+  quantity_of_target_unique_elements = [list(target_series).count(i) for i in target_unique_elements]
+  normedWeights = list(map(weights_fn,quantity_of_target_unique_elements))
+  normedWeights = torch.FloatTensor(normedWeights)
+  return normedWeights
 
 
 
